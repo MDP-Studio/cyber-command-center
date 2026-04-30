@@ -279,6 +279,46 @@ function NavTab({ label, icon, active, onClick }) {
 }
 
 /* ── Main Dashboard ── */
+function FeedbackPanel() {
+  const feedbackLink = "mailto:meidie@mdpstudio.com.au?subject=Feedback:%20Cyber%20Command%20Center&body=Project:%20Cyber%20Command%20Center%0ALink:%20https%3A%2F%2Fc3.mdpstudio.com.au%0AWhat%20happened:%0AWhat%20you%20expected:%0A%0APlease%20do%20not%20include%20passwords%2C%20API%20keys%2C%20private%20account%20data%2C%20client%20data%2C%20or%20payment%20details.";
+
+  return (
+    <section aria-labelledby="project-feedback-title" style={{
+      marginTop: 24,
+      padding: 20,
+      background: cardBg,
+      border: `1px solid ${cardBorder}`,
+      borderRadius: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 360px", minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontFamily: mono, color: accent, letterSpacing: "0.15em", marginBottom: 10 }}>PROJECT FEEDBACK</div>
+          <h2 id="project-feedback-title" style={{ margin: 0, color: "#fff", fontSize: 20, fontFamily: sans, fontWeight: 700 }}>Found a bug or improvement idea?</h2>
+          <p style={{ margin: "8px 0 0", color: dim, fontSize: 14, lineHeight: 1.6 }}>
+            Send the tab you were using, what happened, and what you expected so I can reproduce it cleanly.
+          </p>
+          <p style={{ margin: "8px 0 0", color: dimmer, fontSize: 12, lineHeight: 1.6, fontFamily: mono }}>
+            Do not include passwords, API keys, private account data, client data, or payment details.
+          </p>
+        </div>
+        <a href={feedbackLink} style={{
+          padding: "11px 16px",
+          background: accent + "15",
+          border: `1px solid ${accent}45`,
+          borderRadius: 8,
+          color: accent,
+          fontSize: 12,
+          fontFamily: mono,
+          fontWeight: 800,
+          letterSpacing: "0.1em",
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+        }}>SEND FEEDBACK</a>
+      </div>
+    </section>
+  );
+}
+
 function Dashboard({ user, signOut, isGuest }) {
   const { progress, loaded, toggleTask } = useProgress(user.id);
   const { notes, updateNote } = useNotes(user.id);
@@ -428,6 +468,7 @@ function Dashboard({ user, signOut, isGuest }) {
             </div>
           </>
         )}
+        <FeedbackPanel />
       </main>
 
       {/* Nav */}
