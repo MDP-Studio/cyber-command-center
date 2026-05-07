@@ -95,6 +95,22 @@ export default function Auth({ onAuth }) {
           </p>
         </div>
 
+        <section aria-labelledby="auth-about-title" style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 14,
+          padding: 20,
+          marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 12, fontFamily: mono, color: accent, letterSpacing: 0, marginBottom: 10 }}>ABOUT THIS PROJECT</div>
+          <h2 id="auth-about-title" style={{ margin: 0, color: "#fff", fontSize: 18, fontFamily: sans, lineHeight: 1.35 }}>
+            Self-directed cybersecurity training with progress tracking.
+          </h2>
+          <p style={{ margin: "10px 0 0", color: dim, fontSize: 13, lineHeight: 1.6 }}>
+            Track 49 tasks across 6 phases, log study sessions, keep task notes, and use guest mode instantly without creating an account.
+          </p>
+        </section>
+
         {/* Form — only show when Supabase is configured */}
         {supabaseConfigured && (
           <div style={{

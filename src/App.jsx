@@ -279,6 +279,53 @@ function NavTab({ label, icon, active, onClick }) {
 }
 
 /* ── Main Dashboard ── */
+function ProjectAboutPanel() {
+  const items = [
+    {
+      label: "Training plan",
+      text: "49 tasks across 6 phases, covering foundations, SOC operations, ethical hacking, forensics, governance, and certification prep.",
+    },
+    {
+      label: "Progress system",
+      text: "Guest mode stores progress in the browser. Signed-in accounts can sync progress, notes, and study sessions through Supabase.",
+    },
+    {
+      label: "Security boundary",
+      text: "Row Level Security keeps account data scoped per user, while guest mode avoids account setup entirely.",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="about-project-title" style={{
+      margin: "18px 16px 0",
+      padding: 20,
+      background: cardBg,
+      border: `1px solid ${cardBorder}`,
+      borderRadius: 12,
+    }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 18 }}>
+        <div>
+          <div style={{ fontSize: 12, fontFamily: mono, color: accent, letterSpacing: 0, marginBottom: 10 }}>ABOUT THIS PROJECT</div>
+          <h2 id="about-project-title" style={{ margin: 0, color: "#fff", fontSize: 22, fontFamily: sans, fontWeight: 700, lineHeight: 1.25 }}>
+            A cybersecurity training command center for self-directed study.
+          </h2>
+          <p style={{ margin: "10px 0 0", color: dim, fontSize: 14, lineHeight: 1.6 }}>
+            Cyber Command Center helps organize hands-on security learning with task tracking, a study timer, training logs, notes, guest access, and optional account sync.
+          </p>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          {items.map((item) => (
+            <article key={item.label} style={{ borderLeft: `2px solid ${accent}55`, paddingLeft: 12 }}>
+              <h3 style={{ margin: 0, color: accent, fontSize: 12, fontFamily: mono, letterSpacing: 0 }}>{item.label}</h3>
+              <p style={{ margin: "5px 0 0", color: dim, fontSize: 13, lineHeight: 1.55 }}>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeedbackPanel() {
   const feedbackLink = "mailto:meidie@mdpstudio.com.au?subject=Feedback:%20Cyber%20Command%20Center&body=Project:%20Cyber%20Command%20Center%0ALink:%20https%3A%2F%2Fc3.mdpstudio.com.au%0AWhat%20happened:%0AWhat%20you%20expected:%0A%0APlease%20do%20not%20include%20passwords%2C%20API%20keys%2C%20private%20account%20data%2C%20client%20data%2C%20or%20payment%20details.";
 
@@ -437,6 +484,8 @@ function Dashboard({ user, signOut, isGuest }) {
           }} />
         </div>
       </div>
+
+      <ProjectAboutPanel />
 
       {/* Content */}
       <main style={{ padding: "20px 16px 120px" }}>
