@@ -312,6 +312,9 @@ function ProjectAboutPanel() {
           <p style={{ margin: "10px 0 0", color: dim, fontSize: 14, lineHeight: 1.6 }}>
             Cyber Command Center helps organize hands-on security learning with task tracking, a study timer, training logs, notes, guest access, and optional account sync.
           </p>
+          <p style={{ margin: "10px 0 0", color: dimmer, fontSize: 13, lineHeight: 1.6 }}>
+            Built by Meidie Fei as part of a cybersecurity portfolio focused on practical training workflows and safe account boundaries.
+          </p>
         </div>
         <div style={{ display: "grid", gap: 10 }}>
           {items.map((item) => (
