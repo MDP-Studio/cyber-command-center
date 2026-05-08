@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Policy - Cyber Command Center</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a12; color: rgba(255,255,255,0.85); font-family: 'Space Grotesk', system-ui, sans-serif; line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 60px 24px 80px; }
+    a { color: #00ffc8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-family: 'JetBrains Mono', monospace; font-size: 24px; color: #00ffc8; margin-bottom: 8px; }
+    .subtitle { color: rgba(255,255,255,0.4); font-size: 13px; font-family: 'JetBrains Mono', monospace; margin-bottom: 40px; }
+    h2 { font-size: 16px; color: rgba(255,255,255,0.95); margin-top: 32px; margin-bottom: 12px; }
+    h3 { font-size: 14px; color: #00ffc8; margin-top: 20px; margin-bottom: 8px; }
+    p, li { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    code { font-family: 'JetBrains Mono', monospace; color: #00ffc8; }
+    .back { display: inline-block; margin-bottom: 32px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+    .notice { border: 1px solid rgba(0,255,200,0.2); background: rgba(0,255,200,0.06); padding: 16px; border-radius: 8px; margin-bottom: 28px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">&larr; Back to Cyber Command Center</a>
+    <h1>Security Policy</h1>
+    <p class="subtitle">Last updated: May 8, 2026</p>
+
+    <div class="notice">
+      <p>Cyber Command Center is a portfolio and training workflow project. It is not a certified enterprise platform, managed SOC service, or place to store sensitive client data, lab credentials, payment details, or production incident evidence.</p>
+    </div>
+
+    <h2>Security Model</h2>
+    <p>The app has two operating modes:</p>
+    <ul>
+      <li><strong>Guest mode</strong> - progress, notes, and study sessions stay in browser local storage and are not synced by the app.</li>
+      <li><strong>Signed-in mode</strong> - Supabase Auth handles login, OAuth, and password reset. Supabase Row Level Security scopes profile, progress, notes, and session rows to the signed-in user.</li>
+    </ul>
+    <p>The browser app should only use the public Supabase anon key. Service-role keys and other server-side secrets must never be committed or shipped to the client.</p>
+
+    <h2>Current Controls</h2>
+    <ul>
+      <li>Optional guest mode for no-account use.</li>
+      <li>Supabase Auth for email/password, password reset, and Google OAuth.</li>
+      <li>Row Level Security on profile, progress, note, and study-session tables.</li>
+      <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
+      <li>External links use safe new-tab attributes.</li>
+      <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
+      <li>The local <code>.env</code> file is ignored by Git.</li>
+    </ul>
+
+    <h2>Data Lifecycle</h2>
+    <h3>Guest mode</h3>
+    <p>Guest progress, notes, and sessions stay in browser local storage until you clear site data for this domain.</p>
+
+    <h3>Signed-in mode</h3>
+    <p>Account identity, progress, notes, and study sessions are stored in Supabase until deletion is requested or the project owner removes the account. Deleted records may remain in provider-managed backups for the provider's normal backup retention window.</p>
+
+    <h3>Data minimization</h3>
+    <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes.</p>
+
+    <h2>Known Gaps</h2>
+    <ul>
+      <li>No formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.</li>
+      <li>No self-service account export or deletion yet.</li>
+      <li>No Content Security Policy yet. A tested CSP should be added before collecting more sensitive data.</li>
+      <li>Incident response is manual and best effort.</li>
+    </ul>
+
+    <h2>Incident Reporting</h2>
+    <p>Email <a href="mailto:meidie@mdpstudio.com.au">meidie@mdpstudio.com.au</a> with the subject <code>Security report: Cyber Command Center</code>.</p>
+    <p>Include the affected URL or file path, reproduction steps, expected and actual result, browser/device details if relevant, and screenshots or logs with secrets removed.</p>
+    <p>Do not include passwords, API keys, private account data, payment details, client data, or third-party platform secrets. Do not publicly disclose an unfixed issue until it has been triaged.</p>
+  </div>
+</body>
+</html>

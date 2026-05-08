@@ -106,10 +106,14 @@ Curated links to 9 free platforms: TryHackMe, HackTheBox, PicoCTF, OverTheWire, 
 
 ## Security
 
+Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped through Supabase Auth and RLS, and task notes should not be used for secrets, client data, payment details, or incident evidence.
+
 Production headers via `netlify.toml`:
 - `X-Frame-Options: DENY`
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 
-[Privacy Policy](https://c3.mdpstudio.com.au/privacy) | [Terms of Service](https://c3.mdpstudio.com.au/terms)
+Security reports: email `meidie@mdpstudio.com.au` with the subject `Security report: Cyber Command Center`. See `SECURITY.md` for scope, data lifecycle, known gaps, and incident reporting details.
+
+[Privacy Policy](https://c3.mdpstudio.com.au/privacy) | [Terms of Service](https://c3.mdpstudio.com.au/terms) | [Security Policy](https://c3.mdpstudio.com.au/security)
