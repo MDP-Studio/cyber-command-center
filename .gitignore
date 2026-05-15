@@ -1,9 +1,9 @@
 ﻿node_modules
 dist
+coverage
+.playwright-cli
 .env
 .claude
-AGENTS.md.before-codex-memory-import-*
-
 # Local agent/Codex artifacts
 /AGENTS.md
 /AGENTS.md.before-codex-memory-import-*
@@ -12,3 +12,5 @@ AGENTS.md.before-codex-memory-import-*
 /MEMORY.md
 /.codex/
 
+c3-supabase-export-*.json
+*.sql.gz

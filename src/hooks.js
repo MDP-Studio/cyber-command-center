@@ -1,71 +1,78 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, supabaseConfigured } from './supabaseClient';
+import { apiConfigured, authApi, c3Api } from './apiClient';
 
-// ── Auth Hook ──
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabaseConfigured) {
+    if (!apiConfigured) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    authApi.getSession()
+      .then(({ user: sessionUser }) => setUser(sessionUser ?? null))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const signUp = async (email, password, displayName) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    });
-    return { data, error };
+    try {
+      const data = await authApi.signUp(email, password, displayName);
+      setUser(data.user ?? null);
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   };
 
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    return { data, error };
+    try {
+      const data = await authApi.signIn(email, password);
+      setUser(data.user ?? null);
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (apiConfigured && user?.id !== "guest") await authApi.signOut();
+    setUser(null);
   };
 
   const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
-    return { data, error };
+    try {
+      const data = await authApi.resetPassword(email);
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  };
+
+  const confirmPasswordReset = async (token, password) => {
+    try {
+      const data = await authApi.confirmPasswordReset(token, password);
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   };
 
   const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    return { data, error };
+    authApi.signInWithGoogle();
+    return { data: null, error: null };
   };
 
   const continueAsGuest = () => {
     setUser({ id: "guest", email: "guest" });
   };
 
-  return { user, loading, signUp, signIn, signOut, resetPassword, signInWithGoogle, continueAsGuest };
+  return { user, loading, signUp, signIn, signOut, resetPassword, confirmPasswordReset, signInWithGoogle, continueAsGuest };
 }
 
 const isGuest = (userId) => userId === "guest";
 
-// ── Progress Hook ──
 export function useProgress(userId) {
   const [progress, setProgress] = useState({});
   const [loaded, setLoaded] = useState(false);
@@ -77,16 +84,13 @@ export function useProgress(userId) {
       setLoaded(true);
       return;
     }
-    (async () => {
-      const { data } = await supabase
-        .from('task_progress')
-        .select('task_id, completed')
-        .eq('user_id', userId);
-      const map = {};
-      (data || []).forEach((r) => { if (r.completed) map[r.task_id] = true; });
-      setProgress(map);
-      setLoaded(true);
-    })();
+    c3Api.getProgress()
+      .then(({ progress: rows }) => {
+        const map = {};
+        (rows || []).forEach((row) => { if (row.completed) map[row.task_id] = true; });
+        setProgress(map);
+      })
+      .finally(() => setLoaded(true));
   }, [userId]);
 
   const toggleTask = useCallback(async (taskId) => {
@@ -98,27 +102,13 @@ export function useProgress(userId) {
     });
 
     if (!isGuest(userId)) {
-      if (newVal) {
-        await supabase.from('task_progress').upsert({
-          user_id: userId,
-          task_id: taskId,
-          completed: true,
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,task_id' });
-      } else {
-        await supabase.from('task_progress')
-          .update({ completed: false, completed_at: null, updated_at: new Date().toISOString() })
-          .eq('user_id', userId)
-          .eq('task_id', taskId);
-      }
+      await c3Api.setProgress(taskId, newVal);
     }
   }, [userId, progress]);
 
   return { progress, loaded, toggleTask };
 }
 
-// ── Notes Hook ──
 export function useNotes(userId) {
   const [notes, setNotes] = useState({});
 
@@ -128,15 +118,13 @@ export function useNotes(userId) {
       try { setNotes(JSON.parse(localStorage.getItem("ccc_notes") || "{}")); } catch { /* ignore */ }
       return;
     }
-    (async () => {
-      const { data } = await supabase
-        .from('task_notes')
-        .select('task_id, content')
-        .eq('user_id', userId);
-      const map = {};
-      (data || []).forEach((r) => { if (r.content) map[r.task_id] = r.content; });
-      setNotes(map);
-    })();
+    c3Api.getNotes()
+      .then(({ notes: rows }) => {
+        const map = {};
+        (rows || []).forEach((row) => { if (row.content) map[row.task_id] = row.content; });
+        setNotes(map);
+      })
+      .catch(() => setNotes({}));
   }, [userId]);
 
   const updateNote = useCallback(async (taskId, content) => {
@@ -146,19 +134,13 @@ export function useNotes(userId) {
       return next;
     });
     if (!isGuest(userId)) {
-      await supabase.from('task_notes').upsert({
-        user_id: userId,
-        task_id: taskId,
-        content,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,task_id' });
+      await c3Api.setNote(taskId, content);
     }
   }, [userId]);
 
   return { notes, updateNote };
 }
 
-// ── Study Sessions Hook ──
 export function useSessions(userId) {
   const [logs, setLogs] = useState({});
 
@@ -168,20 +150,17 @@ export function useSessions(userId) {
       try { setLogs(JSON.parse(localStorage.getItem("ccc_sessions") || "{}")); } catch { /* ignore */ }
       return;
     }
-    (async () => {
-      const { data } = await supabase
-        .from('study_sessions')
-        .select('label, duration_seconds, session_date')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      const map = {};
-      (data || []).forEach((r) => {
-        const key = r.session_date;
-        if (!map[key]) map[key] = [];
-        map[key].push({ label: r.label, duration: r.duration_seconds });
-      });
-      setLogs(map);
-    })();
+    c3Api.getSessions()
+      .then(({ sessions: rows }) => {
+        const map = {};
+        (rows || []).forEach((row) => {
+          const key = row.session_date;
+          if (!map[key]) map[key] = [];
+          map[key].push({ label: row.label, duration: row.duration_seconds });
+        });
+        setLogs(map);
+      })
+      .catch(() => setLogs({}));
   }, [userId]);
 
   const addSession = useCallback(async (session) => {
@@ -193,12 +172,7 @@ export function useSessions(userId) {
     });
 
     if (!isGuest(userId)) {
-      await supabase.from('study_sessions').insert({
-        user_id: userId,
-        label: session.label,
-        duration_seconds: session.duration,
-        session_date: session.date,
-      });
+      await c3Api.addSession(session);
     }
   }, [userId]);
 

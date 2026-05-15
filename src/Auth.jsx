@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabaseConfigured } from './supabaseClient';
+import { apiConfigured } from './apiClient';
 
 const mono = "'JetBrains Mono', monospace";
 const sans = "'Space Grotesk', sans-serif";
@@ -36,7 +36,11 @@ const btnPrimary = {
 };
 
 export default function Auth({ onAuth }) {
-  const [mode, setMode] = useState("login"); // login | signup | reset
+  const initialResetToken = apiConfigured
+    ? new URLSearchParams(window.location.search).get("resetToken") || ""
+    : "";
+  const [mode, setMode] = useState(initialResetToken ? "confirmReset" : "login"); // login | signup | reset | confirmReset
+  const [resetToken, setResetToken] = useState(initialResetToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -62,6 +66,17 @@ export default function Auth({ onAuth }) {
         const { error } = await onAuth.resetPassword(email);
         if (error) setError(error.message);
         else setMessage("Password reset email sent.");
+      } else if (mode === "confirmReset") {
+        if (!resetToken) { setError("Reset token is missing."); setLoading(false); return; }
+        const { error } = await onAuth.confirmPasswordReset(resetToken, password);
+        if (error) setError(error.message);
+        else {
+          setPassword("");
+          setResetToken("");
+          setMode("login");
+          setMessage("Password updated. You can log in now.");
+          window.history.replaceState(null, "", window.location.pathname);
+        }
       }
     } catch (e) {
       setError(e.message);
@@ -92,6 +107,7 @@ export default function Auth({ onAuth }) {
             {mode === "login" && "Log in to sync your progress"}
             {mode === "signup" && "Create your operator account"}
             {mode === "reset" && "Reset your access credentials"}
+            {mode === "confirmReset" && "Set a new password"}
           </p>
         </div>
 
@@ -111,8 +127,8 @@ export default function Auth({ onAuth }) {
           </p>
         </section>
 
-        {/* Form — only show when Supabase is configured */}
-        {supabaseConfigured && (
+        {/* Form only shows when the self-hosted API is configured */}
+        {apiConfigured && (
           <div style={{
             background: "rgba(255,255,255,0.03)",
             border: "1px solid rgba(255,255,255,0.1)",
@@ -120,7 +136,7 @@ export default function Auth({ onAuth }) {
             padding: 28,
           }}>
             {/* Google OAuth */}
-            {mode !== "reset" && (
+            {mode !== "reset" && mode !== "confirmReset" && (
               <>
                 <button onClick={() => { setError(""); onAuth.signInWithGoogle(); }} style={{
                   width: "100%", padding: "14px 0", background: "rgba(255,255,255,0.08)",
@@ -156,17 +172,19 @@ export default function Auth({ onAuth }) {
                 style={inputStyle}
               />
             )}
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
+            {mode !== "confirmReset" && (
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={inputStyle}
+              />
+            )}
             {mode !== "reset" && (
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={mode === "confirmReset" ? "New password" : "Password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -209,6 +227,7 @@ export default function Auth({ onAuth }) {
               {loading ? "..." :
                 mode === "login" ? "LOG IN" :
                 mode === "signup" ? "CREATE ACCOUNT" :
+                mode === "confirmReset" ? "UPDATE PASSWORD" :
                 "SEND RESET LINK"
               }
             </button>
@@ -228,8 +247,8 @@ export default function Auth({ onAuth }) {
                   </button>
                 </>
               )}
-              {(mode === "signup" || mode === "reset") && (
-                <button onClick={() => { setMode("login"); setError(""); setMessage(""); }}
+              {(mode === "signup" || mode === "reset" || mode === "confirmReset") && (
+                <button onClick={() => { if (mode === "confirmReset") window.history.replaceState(null, "", window.location.pathname); setMode("login"); setError(""); setMessage(""); setResetToken(""); }}
                   style={{ background: "none", border: "none", color: dim, cursor: "pointer", fontFamily: mono, fontSize: 13 }}>
                   Back to login
                 </button>
@@ -239,19 +258,19 @@ export default function Auth({ onAuth }) {
         )}
 
         {/* Guest mode */}
-        <div style={{ textAlign: "center", marginTop: supabaseConfigured ? 24 : 0 }}>
+        <div style={{ textAlign: "center", marginTop: apiConfigured ? 24 : 0 }}>
           <button onClick={onAuth.continueAsGuest} style={
-            supabaseConfigured
+            apiConfigured
               ? { background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: mono, fontSize: 13, letterSpacing: "0.05em", padding: "10px 16px", transition: "color 0.2s" }
               : { ...btnPrimary, marginBottom: 8 }
           }
-            onMouseEnter={(e) => { if (supabaseConfigured) e.target.style.color = "rgba(255,255,255,0.7)"; }}
-            onMouseLeave={(e) => { if (supabaseConfigured) e.target.style.color = "rgba(255,255,255,0.4)"; }}
+            onMouseEnter={(e) => { if (apiConfigured) e.target.style.color = "rgba(255,255,255,0.7)"; }}
+            onMouseLeave={(e) => { if (apiConfigured) e.target.style.color = "rgba(255,255,255,0.4)"; }}
           >
-            {supabaseConfigured ? "Continue as guest" : "ENTER COMMAND CENTER"}
+            {apiConfigured ? "Continue as guest" : "ENTER COMMAND CENTER"}
           </button>
           <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: mono, marginTop: 8 }}>
-            Progress saved locally only — won't sync across devices
+            Progress saved locally only - won't sync across devices
           </p>
         </div>
       </div>

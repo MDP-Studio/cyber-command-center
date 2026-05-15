@@ -34,30 +34,31 @@
     <h2>Security Model</h2>
     <p>The app has two operating modes:</p>
     <ul>
-      <li><strong>Guest mode</strong> - progress, notes, and study sessions stay in browser local storage and are not synced by the app.</li>
-      <li><strong>Signed-in mode</strong> - Supabase Auth handles login, OAuth, and password reset. Supabase Row Level Security scopes profile, progress, notes, and session rows to the signed-in user.</li>
+      <li><strong>Guest mode</strong>: progress, notes, and study sessions stay in browser local storage and are not synced by the app.</li>
+      <li><strong>Signed-in mode</strong>: the browser talks to the self-hosted API at <code>https://c3-api.mdpstudio.com.au</code>. The API owns auth, sessions, CSRF checks, user scoping, export, and deletion.</li>
     </ul>
-    <p>The browser app should only use the public Supabase anon key. Service-role keys and other server-side secrets must never be committed or shipped to the client.</p>
+    <p>PostgreSQL is private to Docker. Browser code must never receive database credentials, Google client secrets, SMTP secrets, service-role keys, or backup credentials.</p>
 
     <h2>Current Controls</h2>
     <ul>
       <li>Optional guest mode for no-account use.</li>
-      <li>Supabase Auth for email/password, password reset, and Google OAuth.</li>
-      <li>Row Level Security on profile, progress, note, and study-session tables.</li>
+      <li>Email/password auth and Google OAuth through the self-hosted API.</li>
+      <li>Bcrypt password hashes and hashed server-side session tokens.</li>
+      <li><code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code> session cookies in production.</li>
+      <li>Allowed-origin and CSRF checks for state-changing signed-in routes.</li>
+      <li>Server-side per-user access control on progress, notes, sessions, export, and deletion.</li>
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
       <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
-      <li>A report-only Content Security Policy is shipped from <code>netlify.toml</code> and <code>nginx.conf</code> for the rollout experiment described below.</li>
-      <li>The signed-in dashboard exposes a Privacy Controls panel for self-service data export and account-data deletion.</li>
-      <li>The local <code>.env</code> file is ignored by Git.</li>
+      <li>A report-only Content Security Policy allows the app, Google Fonts, and <code>https://c3-api.mdpstudio.com.au</code>.</li>
     </ul>
 
     <h2>Data Lifecycle</h2>
     <h3>Guest mode</h3>
-    <p>Guest progress, notes, and sessions stay in browser local storage until you clear site data for this domain.</p>
+    <p>Guest progress, notes, and sessions stay in browser local storage until you clear site data or use the Privacy Controls panel.</p>
 
     <h3>Signed-in mode</h3>
-    <p>Account identity, progress, notes, and study sessions are stored in Supabase until deletion is requested or the project owner removes the account. Deleted records may remain in provider-managed backups for the provider's normal backup retention window.</p>
+    <p>Account identity, progress, notes, and study sessions are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
 
     <h3>Data minimization</h3>
     <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes.</p>
@@ -65,21 +66,19 @@
     <h2>Privacy Controls</h2>
     <p>The signed-in dashboard includes a Privacy Controls panel with two self-service actions:</p>
     <ul>
-      <li><strong>Export My Data</strong> - downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
-      <li><strong>Delete My Account</strong> - behind a "type DELETE to confirm" guard, removes every row scoped to your account (profile, progress, notes, sessions), signs you out, and reloads.</li>
+      <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
+      <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, and reloads.</li>
     </ul>
-    <p>Self-service deletion clears the application data. The Supabase Auth sign-in record itself (your email and login history) is not yet removable from the browser because that requires a service-role key. To request full sign-in record removal, email <a href="mailto:meidie@mdpstudio.com.au">meidie@mdpstudio.com.au</a>. Full self-service auth deletion will ship with the planned self-hosted backend.</p>
 
     <h2>Content Security Policy</h2>
-    <p>A <code>Content-Security-Policy-Report-Only</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs (Google Fonts and Supabase API) and blocks framing, plugin content, and unexpected form actions.</p>
-    <p>The policy is in report-only mode for a 7-day validation experiment that started May 15, 2026. Violations land in the browser DevTools console while the planned report endpoint is built on the self-hosted backend. After the experiment, the header will be promoted to enforcing.</p>
+    <p>A <code>Content-Security-Policy-Report-Only</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs and reports violations to <code>https://c3-api.mdpstudio.com.au/api/csp-report</code>.</p>
+    <p>The policy remains report-only until the remote API, tunnel, migration, and production smoke tests pass. After that, the header should be promoted to enforcing.</p>
 
     <h2>Known Gaps</h2>
     <ul>
       <li>No formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.</li>
-      <li>Self-service deletion clears application data but the Supabase Auth sign-in record still requires an email request until the self-hosted backend ships.</li>
-      <li>CSP is currently report-only. Enforcement is gated on the 7-day violation review.</li>
-      <li>CSP violations land in the browser console; no central report sink is configured yet.</li>
+      <li>The backend must pass health, migration, backup restore, and migrated-user smoke tests before it is treated as production-ready.</li>
+      <li>SMTP is required for production password reset emails.</li>
       <li>Incident response is manual and best effort.</li>
     </ul>
 

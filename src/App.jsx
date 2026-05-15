@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth, useProgress, useNotes, useSessions } from './hooks';
-import { supabaseConfigured } from './supabaseClient';
+import { apiConfigured } from './apiClient';
 import { PHASES, PLATFORMS } from './data';
 import Auth from './Auth';
 import PrivacyPanel from './PrivacyPanel';
@@ -21,7 +21,7 @@ function fmt(s) {
 }
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 
-/* ── Progress Ring ── */
+/* Progress Ring */
 function ProgressRing({ percent, color, size = 54, stroke = 4 }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -41,7 +41,7 @@ function ProgressRing({ percent, color, size = 54, stroke = 4 }) {
   );
 }
 
-/* ── Study Timer ── */
+/* Study Timer */
 function StudyTimer({ onSessionEnd }) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
@@ -110,7 +110,7 @@ function StudyTimer({ onSessionEnd }) {
   );
 }
 
-/* ── Daily Log ── */
+/* Daily Log */
 function DailyLog({ logs, isOpen, onToggle }) {
   const sortedDates = Object.keys(logs).sort().reverse();
   const totalSeconds = Object.values(logs).reduce((sum, day) => sum + day.reduce((s, e) => s + e.duration, 0), 0);
@@ -137,7 +137,7 @@ function DailyLog({ logs, isOpen, onToggle }) {
         <div>
           <div style={{ fontSize: 12, fontFamily: mono, color: "#ff6b35", letterSpacing: "0.15em", marginBottom: 4 }}>TRAINING LOG</div>
           <div style={{ fontSize: 14, fontFamily: sans, color: dim }}>
-            {sortedDates.length} days · {totalHrs}h total · {streakDays} day streak
+            {sortedDates.length} days * {totalHrs}h total * {streakDays} day streak
           </div>
         </div>
         <span style={{ color: dim, fontSize: 18, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>{"\u25BE"}</span>
@@ -169,7 +169,7 @@ function DailyLog({ logs, isOpen, onToggle }) {
   );
 }
 
-/* ── Task Item ── */
+/* Task Item */
 function TaskItem({ task, done, onToggle, note, onNoteChange }) {
   const [showNote, setShowNote] = useState(false);
   return (
@@ -216,7 +216,7 @@ function TaskItem({ task, done, onToggle, note, onNoteChange }) {
   );
 }
 
-/* ── Phase Card ── */
+/* Phase Card */
 function PhaseCard({ phase, progress, notes, onToggleTask, onNoteChange, isOpen, onToggleOpen }) {
   const allTasks = phase.modules.flatMap((m) => m.tasks);
   const doneCount = allTasks.filter((t) => progress[t.id]).length;
@@ -265,7 +265,7 @@ function PhaseCard({ phase, progress, notes, onToggleTask, onNoteChange, isOpen,
   );
 }
 
-/* ── Nav Tab ── */
+/* Nav Tab */
 function NavTab({ label, icon, active, onClick }) {
   return (
     <button onClick={onClick} style={{
@@ -279,7 +279,7 @@ function NavTab({ label, icon, active, onClick }) {
   );
 }
 
-/* ── Main Dashboard ── */
+/* Main Dashboard */
 function ProjectAboutPanel() {
   const items = [
     {
@@ -288,11 +288,11 @@ function ProjectAboutPanel() {
     },
     {
       label: "Progress system",
-      text: "Guest mode stores progress in the browser. Signed-in accounts can sync progress, notes, and study sessions through Supabase.",
+      text: "Guest mode stores progress in the browser. Signed-in accounts sync progress, notes, and study sessions through the self-hosted API.",
     },
     {
       label: "Security boundary",
-      text: "Row Level Security keeps account data scoped per user, while guest mode avoids account setup entirely.",
+      text: "The API enforces per-user access, while guest mode avoids account setup entirely.",
     },
   ];
 
@@ -386,7 +386,7 @@ function Dashboard({ user, signOut, isGuest }) {
     // Immediate local update via hook
     clearTimeout(noteTimers.current[taskId]);
     noteTimers.current[taskId] = setTimeout(() => updateNote(taskId, val), 800);
-    // Optimistic local — hook handles this
+    // Optimistic local - hook handles this
     updateNote(taskId, val);
   }, [updateNote]);
 
@@ -539,12 +539,12 @@ function Dashboard({ user, signOut, isGuest }) {
   );
 }
 
-/* ── App Root ── */
+/* App Root */
 export default function App() {
   const auth = useAuth();
 
-  // No Supabase? Skip auth entirely — straight into guest mode
-  if (!supabaseConfigured) {
+  // No API? Skip auth entirely and run in guest mode.
+  if (!apiConfigured) {
     const guestUser = { id: "guest", email: "guest" };
     return <Dashboard user={guestUser} signOut={() => {}} isGuest={true} />;
   }

@@ -1,7 +1,7 @@
 export const PHASES = [
   {
     id: "foundations",
-    title: "01 — FOUNDATIONS",
+    title: "01 - FOUNDATIONS",
     subtitle: "Network Defence & Security Fundamentals",
     color: "#00ffc8",
     hours: 60,
@@ -12,8 +12,8 @@ export const PHASES = [
         tasks: [
           { id: "f1", label: "Complete TryHackMe 'Pre-Security' path", link: "https://tryhackme.com/path/outline/presecurity", hours: 8 },
           { id: "f2", label: "Complete TryHackMe 'Network Fundamentals' room", link: "https://tryhackme.com/module/network-fundamentals", hours: 4 },
-          { id: "f3", label: "Set up Wireshark — capture & analyse 10 packet dumps", link: "https://www.wireshark.org/", hours: 6 },
-          { id: "f4", label: "Learn TCP/IP, DNS, HTTP, HTTPS, ARP — write cheatsheet", hours: 4 },
+          { id: "f3", label: "Set up Wireshark - capture & analyse 10 packet dumps", link: "https://www.wireshark.org/", hours: 6 },
+          { id: "f4", label: "Learn TCP/IP, DNS, HTTP, HTTPS, ARP - write cheatsheet", hours: 4 },
         ],
       },
       {
@@ -21,14 +21,14 @@ export const PHASES = [
         tasks: [
           { id: "f5", label: "Complete OverTheWire 'Bandit' wargame (all levels)", link: "https://overthewire.org/wargames/bandit/", hours: 10 },
           { id: "f6", label: "Set up a Kali Linux VM (VirtualBox or VMware)", link: "https://www.kali.org/", hours: 2 },
-          { id: "f7", label: "Bash scripting fundamentals — automate 5 tasks", hours: 6 },
+          { id: "f7", label: "Bash scripting fundamentals - automate 5 tasks", hours: 6 },
         ],
       },
       {
         name: "Cryptography & Security Principles",
         tasks: [
           { id: "f8", label: "Complete TryHackMe 'Cryptography' module", link: "https://tryhackme.com/module/cryptography", hours: 6 },
-          { id: "f9", label: "Study CIA triad, AAA, defense-in-depth — write notes", hours: 3 },
+          { id: "f9", label: "Study CIA triad, AAA, defense-in-depth - write notes", hours: 3 },
           { id: "f10", label: "Implement basic encryption/decryption in Python", hours: 4 },
           { id: "f11", label: "Complete TryHackMe 'Intro to Cyber Security' path", link: "https://tryhackme.com/path/outline/introtocyber", hours: 7 },
         ],
@@ -37,11 +37,11 @@ export const PHASES = [
   },
   {
     id: "soc",
-    title: "02 — SOC OPERATIONS",
+    title: "02 - SOC OPERATIONS",
     subtitle: "Detection, Monitoring & Incident Response",
     color: "#ff6b35",
     hours: 50,
-    description: "50 hours of live SOC-equivalent work — detection, triage, escalation.",
+    description: "50 hours of live SOC-equivalent work - detection, triage, escalation.",
     modules: [
       {
         name: "SOC Setup & SIEM",
@@ -57,8 +57,8 @@ export const PHASES = [
         tasks: [
           { id: "s5", label: "Complete TryHackMe 'SOC Level 1' path", link: "https://tryhackme.com/path/outline/soclevel1", hours: 12 },
           { id: "s6", label: "Analyse 20 PCAP files for malicious activity", hours: 6 },
-          { id: "s7", label: "Practice alert triage — document 15 incident reports", hours: 6 },
-          { id: "s8", label: "Study MITRE ATT&CK framework — map 10 techniques", link: "https://attack.mitre.org/", hours: 5 },
+          { id: "s7", label: "Practice alert triage - document 15 incident reports", hours: 6 },
+          { id: "s8", label: "Study MITRE ATT&CK framework - map 10 techniques", link: "https://attack.mitre.org/", hours: 5 },
         ],
       },
       {
@@ -66,14 +66,14 @@ export const PHASES = [
         tasks: [
           { id: "s9", label: "Write an Incident Response playbook (phishing, malware, DDoS)", hours: 5 },
           { id: "s10", label: "Complete Blue Team Labs Online challenges (5+)", link: "https://blueteamlabs.online/", hours: 8 },
-          { id: "s11", label: "Practice threat escalation — document decision trees", hours: 3 },
+          { id: "s11", label: "Practice threat escalation - document decision trees", hours: 3 },
         ],
       },
     ],
   },
   {
     id: "offense",
-    title: "03 — ETHICAL HACKING",
+    title: "03 - ETHICAL HACKING",
     subtitle: "Penetration Testing & Vulnerability Assessment",
     color: "#ff2d6b",
     hours: 60,
@@ -83,7 +83,7 @@ export const PHASES = [
         name: "Web Application Security",
         tasks: [
           { id: "o1", label: "Set up DVWA locally", link: "https://github.com/digininja/DVWA", hours: 2 },
-          { id: "o2", label: "Complete OWASP Top 10 — exploit each vulnerability", link: "https://owasp.org/www-project-top-ten/", hours: 10 },
+          { id: "o2", label: "Complete OWASP Top 10 - exploit each vulnerability", link: "https://owasp.org/www-project-top-ten/", hours: 10 },
           { id: "o3", label: "Complete TryHackMe 'Web Fundamentals' path", link: "https://tryhackme.com/path/outline/web", hours: 8 },
           { id: "o4", label: "Practice with Burp Suite on vulnerable apps", link: "https://portswigger.net/burp/communitydownload", hours: 6 },
         ],
@@ -93,7 +93,7 @@ export const PHASES = [
         tasks: [
           { id: "o5", label: "Complete HackTheBox 'Starting Point' (all tiers)", link: "https://www.hackthebox.com/", hours: 10 },
           { id: "o6", label: "Root 10 HackTheBox machines (Easy to Medium)", hours: 15 },
-          { id: "o7", label: "Learn Metasploit framework — complete 5 exploit chains", hours: 6 },
+          { id: "o7", label: "Learn Metasploit framework - complete 5 exploit chains", hours: 6 },
           { id: "o8", label: "Write a professional VAPT report for one engagement", hours: 5 },
         ],
       },
@@ -108,7 +108,7 @@ export const PHASES = [
   },
   {
     id: "forensics",
-    title: "04 — DIGITAL FORENSICS",
+    title: "04 - DIGITAL FORENSICS",
     subtitle: "Investigation, Evidence & Analysis",
     color: "#a855f7",
     hours: 40,
@@ -117,9 +117,9 @@ export const PHASES = [
       {
         name: "Forensic Fundamentals",
         tasks: [
-          { id: "d1", label: "Install Autopsy & Sleuth Kit — analyse a disk image", link: "https://www.autopsy.com/", hours: 5 },
+          { id: "d1", label: "Install Autopsy & Sleuth Kit - analyse a disk image", link: "https://www.autopsy.com/", hours: 5 },
           { id: "d2", label: "Complete TryHackMe 'Digital Forensics' rooms", link: "https://tryhackme.com/", hours: 8 },
-          { id: "d3", label: "Study chain of custody procedures — document a process", hours: 3 },
+          { id: "d3", label: "Study chain of custody procedures - document a process", hours: 3 },
         ],
       },
       {
@@ -134,7 +134,7 @@ export const PHASES = [
   },
   {
     id: "governance",
-    title: "05 — GOVERNANCE & STRATEGY",
+    title: "05 - GOVERNANCE & STRATEGY",
     subtitle: "Frameworks, Compliance & Leadership",
     color: "#38bdf8",
     hours: 30,
@@ -144,8 +144,8 @@ export const PHASES = [
         name: "Frameworks & Standards",
         tasks: [
           { id: "g1", label: "Study NIST Cybersecurity Framework", link: "https://www.nist.gov/cyberframework", hours: 5 },
-          { id: "g2", label: "Study ISO 27001 — map controls to a sample org", hours: 5 },
-          { id: "g3", label: "Learn CIS Controls — prioritise top 10", link: "https://www.cisecurity.org/controls", hours: 4 },
+          { id: "g2", label: "Study ISO 27001 - map controls to a sample org", hours: 5 },
+          { id: "g3", label: "Learn CIS Controls - prioritise top 10", link: "https://www.cisecurity.org/controls", hours: 4 },
         ],
       },
       {
@@ -160,8 +160,8 @@ export const PHASES = [
   },
   {
     id: "certs",
-    title: "06 — CERTIFICATION TRACK",
-    subtitle: "Prove It — External Validation",
+    title: "06 - CERTIFICATION TRACK",
+    subtitle: "Prove It - External Validation",
     color: "#facc15",
     hours: 0,
     description: "Structured certs to replace the degree signal.",

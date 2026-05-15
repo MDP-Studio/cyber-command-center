@@ -1,0 +1,95 @@
+services:
+  c3-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: c3-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 8080
+      API_ORIGIN: https://c3-api.mdpstudio.com.au
+      APP_ORIGIN: https://c3.mdpstudio.com.au
+      COOKIE_SECURE: "true"
+      DATABASE_URL: postgres://c3_app:${POSTGRES_PASSWORD}@c3-postgres:5432/c3
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: https://c3-api.mdpstudio.com.au/api/auth/google/callback
+      SMTP_URL: ${SMTP_URL}
+      MAIL_FROM: ${MAIL_FROM}
+      PASSWORD_RESET_BASE_URL: https://c3.mdpstudio.com.au
+      CSP_REPORT_IP_SALT: ${CSP_REPORT_IP_SALT}
+    depends_on:
+      c3-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8089:8080"
+    networks:
+      - c3-private
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  c3-postgres:
+    image: postgres:16-alpine
+    container_name: c3-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: c3
+      POSTGRES_USER: c3_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - c3-postgres-data:/var/lib/postgresql/data
+    networks:
+      - c3-private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U c3_app -d c3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  c3-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: c3-postgres-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: c3-postgres
+      POSTGRES_DB: c3
+      POSTGRES_USER: c3_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 3
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - c3-postgres-backups:/backups
+    depends_on:
+      c3-postgres:
+        condition: service_healthy
+    networks:
+      - c3-private
+
+  c3-cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: c3-cloudflared
+    restart: unless-stopped
+    profiles:
+      - dedicated-tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TUNNEL_TOKEN}
+    depends_on:
+      c3-api:
+        condition: service_healthy
+    networks:
+      - c3-private
+
+networks:
+  c3-private:
+    driver: bridge
+
+volumes:
+  c3-postgres-data:
+  c3-postgres-backups:

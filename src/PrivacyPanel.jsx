@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase, supabaseConfigured } from './supabaseClient';
+import { c3Api } from './apiClient';
 
 const mono = "'JetBrains Mono', monospace";
 const sans = "'Space Grotesk', sans-serif";
@@ -39,35 +39,6 @@ function clearGuestData() {
   for (const key of GUEST_KEYS) localStorage.removeItem(key);
 }
 
-async function fetchAccountData(userId) {
-  // Run in parallel; RLS scopes each query to the signed-in user.
-  const [profile, progress, notes, sessions] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-    supabase.from('task_progress').select('*').eq('user_id', userId),
-    supabase.from('task_notes').select('*').eq('user_id', userId),
-    supabase.from('study_sessions').select('*').eq('user_id', userId),
-  ]);
-  return {
-    profile: profile.data,
-    task_progress: progress.data || [],
-    task_notes: notes.data || [],
-    study_sessions: sessions.data || [],
-  };
-}
-
-async function deleteAccountRows(userId) {
-  // Order matters only for foreign-key cascades; RLS lets the user delete each
-  // table independently. We surface the first error if any single call fails.
-  const results = await Promise.all([
-    supabase.from('task_progress').delete().eq('user_id', userId),
-    supabase.from('task_notes').delete().eq('user_id', userId),
-    supabase.from('study_sessions').delete().eq('user_id', userId),
-    supabase.from('profiles').delete().eq('id', userId),
-  ]);
-  const firstError = results.find((r) => r.error)?.error;
-  if (firstError) throw firstError;
-}
-
 export default function PrivacyPanel({ user, isGuest }) {
   const [busy, setBusy] = useState(null); // 'export' | 'delete' | null
   const [error, setError] = useState('');
@@ -85,7 +56,7 @@ export default function PrivacyPanel({ user, isGuest }) {
         app: 'cyber-command-center',
         mode: isGuest ? 'guest' : 'signed-in',
         user: isGuest ? null : { id: user.id, email: user.email },
-        data: isGuest ? readGuestData() : await fetchAccountData(user.id),
+        data: isGuest ? readGuestData() : (await c3Api.exportAccount()).data,
       };
       downloadJson(`c3-export-${todayKey()}.json`, payload);
       setMessage('Export downloaded.');
@@ -103,14 +74,13 @@ export default function PrivacyPanel({ user, isGuest }) {
       if (isGuest) {
         clearGuestData();
       } else {
-        await deleteAccountRows(user.id);
-        clearGuestData(); // defensive -wipe any stale guest keys too
-        if (supabaseConfigured) await supabase.auth.signOut();
+        await c3Api.deleteAccount();
+        clearGuestData();
       }
       setConfirmOpen(false);
       setConfirmText('');
       // Hard reload: cleanest way to drop every in-memory hook cache across
-      // guest/signed-in/no-Supabase modes without threading state resets through
+      // guest and signed-in modes without threading state resets through
       // each hook.
       window.location.reload();
     } catch (e) {
@@ -141,7 +111,7 @@ export default function PrivacyPanel({ user, isGuest }) {
 
       {!isGuest && (
         <p style={{ margin: '8px 0 0', color: dimmer, fontSize: 12, lineHeight: 1.6, fontFamily: mono }}>
-          Note: deleting clears your training data but the sign-in record (email) is held server-side until full-stack self-service deletion ships. To request immediate sign-in removal, email meidie@mdpstudio.com.au.
+          Note: deleting removes your account record and training data from the self-hosted backend. Provider backups may retain deleted data for their normal retention window.
         </p>
       )}
 

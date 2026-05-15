@@ -17,10 +17,6 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    # Report-Only CSP -7-day validation experiment (opened 2026-05-15).
-    # Violations surface in the browser DevTools console. No report-uri / report-to
-    # endpoint yet: the planned sink lives on the self-hosted backend that will
-    # replace Supabase. Once that endpoint exists, add `report-uri /csp-report;`
-    # and a matching `report-to` group, then promote this header to enforcing
-    # `Content-Security-Policy` after the violation list is clean.
-    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'"
+    # Report-Only until the remote API, tunnel, migration, and production smoke
+    # tests pass. Then promote this exact value to Content-Security-Policy.
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://c3-api.mdpstudio.com.au; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'; report-uri https://c3-api.mdpstudio.com.au/api/csp-report"
