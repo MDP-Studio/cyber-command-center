@@ -24,7 +24,7 @@ services:
       c3-postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8089:8080"
+      - "100.110.79.52:8089:8080"
     networks:
       - c3-private
     healthcheck:

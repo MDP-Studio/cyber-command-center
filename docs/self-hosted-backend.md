@@ -31,7 +31,8 @@ PASSWORD_RESET_BASE_URL=https://c3.mdpstudio.com.au
 CSP_REPORT_IP_SALT=replace-with-long-random-salt
 ```
 
-For a dedicated Cloudflare Tunnel container, also set `CLOUDFLARED_TUNNEL_TOKEN`. The preferred default is to reuse the existing remote tunnel and route `c3-api.mdpstudio.com.au` to `http://127.0.0.1:8089`.
+For a dedicated Cloudflare Tunnel container, also set `CLOUDFLARED_TUNNEL_TOKEN`. The preferred default is to reuse the existing remote tunnel.
+For the current MDP Studio remote PC, the compose file binds the API to `100.110.79.52:8089` so the existing `cloudflared-tunnel` container can reach it from outside the C3 compose network.
 
 ## First Deploy
 
@@ -48,12 +49,13 @@ docker compose --env-file .env.production -f docker-compose.remote.yml exec c3-a
 
 ```bash
 curl -fsS http://127.0.0.1:8089/api/health
+curl -fsS http://100.110.79.52:8089/api/health
 ```
 
 5. Add the Cloudflare Tunnel route:
 
 ```txt
-c3-api.mdpstudio.com.au -> http://127.0.0.1:8089
+c3-api.mdpstudio.com.au -> http://100.110.79.52:8089
 ```
 
 6. Verify through the public API domain:
