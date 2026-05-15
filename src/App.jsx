@@ -3,6 +3,7 @@ import { useAuth, useProgress, useNotes, useSessions } from './hooks';
 import { supabaseConfigured } from './supabaseClient';
 import { PHASES, PLATFORMS } from './data';
 import Auth from './Auth';
+import PrivacyPanel from './PrivacyPanel';
 
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
 const sans = "'Space Grotesk', sans-serif";
@@ -520,6 +521,7 @@ function Dashboard({ user, signOut, isGuest }) {
             </div>
           </>
         )}
+        <PrivacyPanel user={user} isGuest={isGuest} />
         <FeedbackPanel />
       </main>
 

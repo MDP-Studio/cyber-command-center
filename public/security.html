@@ -25,7 +25,7 @@
   <div class="container">
     <a href="/" class="back">&larr; Back to Cyber Command Center</a>
     <h1>Security Policy</h1>
-    <p class="subtitle">Last updated: May 8, 2026</p>
+    <p class="subtitle">Last updated: May 15, 2026</p>
 
     <div class="notice">
       <p>Cyber Command Center is a portfolio and training workflow project. It is not a certified enterprise platform, managed SOC service, or place to store sensitive client data, lab credentials, payment details, or production incident evidence.</p>
@@ -47,6 +47,8 @@
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
       <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
+      <li>A report-only Content Security Policy is shipped from <code>netlify.toml</code> and <code>nginx.conf</code> for the rollout experiment described below.</li>
+      <li>The signed-in dashboard exposes a Privacy Controls panel for self-service data export and account-data deletion.</li>
       <li>The local <code>.env</code> file is ignored by Git.</li>
     </ul>
 
@@ -60,11 +62,24 @@
     <h3>Data minimization</h3>
     <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes.</p>
 
+    <h2>Privacy Controls</h2>
+    <p>The signed-in dashboard includes a Privacy Controls panel with two self-service actions:</p>
+    <ul>
+      <li><strong>Export My Data</strong> - downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
+      <li><strong>Delete My Account</strong> - behind a "type DELETE to confirm" guard, removes every row scoped to your account (profile, progress, notes, sessions), signs you out, and reloads.</li>
+    </ul>
+    <p>Self-service deletion clears the application data. The Supabase Auth sign-in record itself (your email and login history) is not yet removable from the browser because that requires a service-role key. To request full sign-in record removal, email <a href="mailto:meidie@mdpstudio.com.au">meidie@mdpstudio.com.au</a>. Full self-service auth deletion will ship with the planned self-hosted backend.</p>
+
+    <h2>Content Security Policy</h2>
+    <p>A <code>Content-Security-Policy-Report-Only</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs (Google Fonts and Supabase API) and blocks framing, plugin content, and unexpected form actions.</p>
+    <p>The policy is in report-only mode for a 7-day validation experiment that started May 15, 2026. Violations land in the browser DevTools console while the planned report endpoint is built on the self-hosted backend. After the experiment, the header will be promoted to enforcing.</p>
+
     <h2>Known Gaps</h2>
     <ul>
       <li>No formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.</li>
-      <li>No self-service account export or deletion yet.</li>
-      <li>No Content Security Policy yet. A tested CSP should be added before collecting more sensitive data.</li>
+      <li>Self-service deletion clears application data but the Supabase Auth sign-in record still requires an email request until the self-hosted backend ships.</li>
+      <li>CSP is currently report-only. Enforcement is gated on the 7-day violation review.</li>
+      <li>CSP violations land in the browser console; no central report sink is configured yet.</li>
       <li>Incident response is manual and best effort.</li>
     </ul>
 

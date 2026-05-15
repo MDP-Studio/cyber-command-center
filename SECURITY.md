@@ -1,6 +1,6 @@
 # Security Policy
 
-Last updated: 2026-05-08
+Last updated: 2026-05-15
 
 Cyber Command Center is a free cybersecurity training tracker. This policy documents the current security model, data lifecycle, incident reporting process, and known limits so the product's security posture is explicit instead of implied.
 
@@ -48,15 +48,41 @@ Out of scope:
 - Notes are rendered through React text nodes and textarea values, not raw HTML injection paths.
 - External curriculum links use `target="_blank"` with `rel="noopener noreferrer"`.
 - Netlify security headers set frame denial, MIME sniffing protection, strict referrer policy, and a restrictive permissions policy.
+- A `Content-Security-Policy-Report-Only` header is shipped from `netlify.toml` and `nginx.conf` (see "Content Security Policy" below).
+- The signed-in dashboard surfaces a Privacy Controls panel with self-service "Export My Data" and "Delete My Account" actions (see "Self-service privacy actions" below).
 - `.env` is ignored by Git. Only the public example file should be tracked.
 
 ### Known Gaps
 
 - There is no formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.
-- Account deletion is request-based. The app does not yet provide self-service account export or deletion.
-- Content Security Policy is not configured yet. Add and test a CSP before collecting more sensitive data or marketing the app as enterprise-ready.
+- Self-service deletion clears every application row (profile, progress, notes, sessions) but the Supabase Auth sign-in record remains until a service-role deletion runs. Until the planned self-hosted backend ships, full sign-in removal is still email-based via `meidie@mdpstudio.com.au`.
+- The CSP is currently report-only. Enforcement is gated on a 7-day violation review that started 2026-05-15.
+- The CSP report sink is the browser DevTools console - no `report-uri` / `report-to` endpoint yet. The planned sink lives on the self-hosted backend that will replace Supabase.
 - The app has no dedicated backend incident automation. Incident response is currently manual.
 - Task notes are free text. Users should not store passwords, API keys, customer data, private lab flags, payment data, or live incident evidence in notes.
+
+### Content Security Policy
+
+The current policy is shipped as `Content-Security-Policy-Report-Only` from both `netlify.toml` (production) and `nginx.conf` (Docker). Directive summary:
+
+- `default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`.
+- `script-src 'self'` - Vite emits self-hosted hashed bundles only.
+- `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` - required because the React app uses inline `style={{}}` props throughout and `index.html` ships a small inline `<style>` block; Google Fonts CSS is loaded from `fonts.googleapis.com`.
+- `font-src 'self' https://fonts.gstatic.com data:` - Google Fonts file domain plus `data:` for any inline glyphs.
+- `img-src 'self' data: https:` - generous during the experiment; tighten once violations are reviewed.
+- `connect-src 'self' https://*.supabase.co https://*.supabase.in` - Supabase API. Replace with the self-hosted backend host after migration.
+- `form-action 'self' https://accounts.google.com` - Google OAuth redirect.
+
+**Rollout plan.** Browse signed-in flows, guest flows, and the static policy pages for seven days starting 2026-05-15. Collect DevTools console reports for any blocked resource. When the violation list is clean (or only contains intentional changes), promote the header to enforcing `Content-Security-Policy` and add a `report-uri` / `report-to` pointing at the self-hosted endpoint once it exists.
+
+### Self-service privacy actions
+
+The signed-in dashboard exposes a "Privacy Controls" section with two actions, implemented in `src/PrivacyPanel.jsx`:
+
+- **Export My Data** - downloads a JSON snapshot of the user's profile, task progress, task notes, and study sessions. In guest mode, the same button dumps the `ccc_progress`, `ccc_notes`, and `ccc_sessions` localStorage keys.
+- **Delete My Account** - opens a "type DELETE to confirm" modal. On confirmation it deletes every row scoped to the user from `task_progress`, `task_notes`, `study_sessions`, and `profiles` (RLS lets the user delete their own rows), clears the guest localStorage keys defensively, signs the user out, and reloads. In guest mode the same flow clears localStorage and reloads.
+
+The Supabase Auth sign-in record is **not** removed by this flow because the browser anon key cannot reach `auth.users`. That step still requires either an email request to `meidie@mdpstudio.com.au` or a service-role deletion run, and will become self-service once the planned self-hosted backend replaces Supabase.
 
 ## Data Lifecycle
 
@@ -112,7 +138,7 @@ This checklist was reviewed against the current repository on 2026-05-08:
 - Secret leakage: `.env` is ignored and no service-role key should be committed or shipped to the browser.
 - Stored script injection: notes are not rendered as raw HTML.
 - Tabnabbing: external links use `rel="noopener noreferrer"`.
-- Data deletion: deletion is documented, but self-service deletion remains a gap.
+- Data deletion: self-service data deletion is available in the dashboard; full sign-in (auth.users) removal still requires an email request.
 - Incident handling: reporting path is documented, but response is manual and best effort.
 - Sensitive-data misuse: the policy tells users not to store secrets, client data, payment details, or incident evidence in notes.
 
@@ -126,3 +152,4 @@ Before shipping security-sensitive changes:
 - Review `supabase/schema.sql` if tables or access patterns changed.
 - Check `netlify.toml` headers if new external scripts, frames, sensors, or third-party services are added.
 - Update this file, `README.md`, and public policy pages when data collection, retention, auth, or reporting behavior changes.
+- Re-check the CSP directive list in `netlify.toml` and `nginx.conf` when adding any new external script, style, font, image host, API host, OAuth provider, or form action.
