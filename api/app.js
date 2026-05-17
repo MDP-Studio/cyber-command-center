@@ -175,7 +175,7 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     credentials: true,
     origin(origin, callback) {
       if (!origin || isAllowedOrigin(config, origin)) return callback(null, true);
-      return callback(new Error('Origin not allowed'), false);
+      return callback(null, false);
     },
   });
   app.register(rateLimit, {

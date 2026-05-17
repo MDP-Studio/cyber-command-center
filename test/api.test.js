@@ -271,6 +271,19 @@ test('state-changing signed-in routes require CSRF', async () => {
   await app.close();
 });
 
+test('state-changing routes reject disallowed origins with 403', async () => {
+  const { app } = appWith();
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/auth/signup',
+    headers: { origin: 'https://evil.example' },
+    payload: { email: 'origin@example.com', password: 'long-password', displayName: 'Origin' },
+  });
+  assert.equal(response.statusCode, 403);
+  assert.equal(body(response).error, 'Origin not allowed.');
+  await app.close();
+});
+
 test('account deletion cascades app data and clears session', async () => {
   const { app, db } = appWith();
   const signup = await app.inject({
