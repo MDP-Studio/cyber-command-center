@@ -55,20 +55,19 @@ Out of scope:
 - Notes are rendered through React text nodes and textarea values, not raw HTML injection paths.
 - External curriculum links use `target="_blank"` with `rel="noopener noreferrer"`.
 - Netlify security headers set frame denial, MIME sniffing protection, strict referrer policy, and a restrictive permissions policy.
-- A `Content-Security-Policy-Report-Only` header is shipped from `netlify.toml` and `nginx.conf`, restricted to the frontend, Google Fonts, and `https://c3-api.mdpstudio.com.au`.
+- A `Content-Security-Policy` header is shipped from `netlify.toml` and `nginx.conf`, restricted to the frontend, Google Fonts, and `https://c3-api.mdpstudio.com.au`.
 
 ### Known Gaps
 
 - There is no formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.
-- The backend must not be treated as production-ready until the remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import dry-run, and migrated-user smoke tests pass.
-- The CSP remains report-only until production smoke tests pass. After that, promote it to enforcing `Content-Security-Policy`.
+- The remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import, and API smoke tests have passed. Remaining account-level validation should be completed by one migrated Google user and the migrated email/password user in a browser.
 - SMTP is required for production password reset emails. `AUTH_LOG_RESET_LINKS=true` is development-only.
 - Incident response is currently manual.
 - Task notes are free text. Users should not store passwords, API keys, customer data, private lab flags, payment data, or live incident evidence in notes.
 
 ## Content Security Policy
 
-The current policy is shipped as `Content-Security-Policy-Report-Only` from both `netlify.toml` and `nginx.conf`.
+The current policy is shipped as enforcing `Content-Security-Policy` from both `netlify.toml` and `nginx.conf`.
 
 - `default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`.
 - `script-src 'self'`.

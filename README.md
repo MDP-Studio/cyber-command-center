@@ -108,7 +108,7 @@ Production headers via `netlify.toml`:
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-- `Content-Security-Policy-Report-Only` limited to the app, Google Fonts, and `https://c3-api.mdpstudio.com.au`
+- `Content-Security-Policy` limited to the app, Google Fonts, and `https://c3-api.mdpstudio.com.au`
 
 Security reports: email `meidie@mdpstudio.com.au` with the subject `Security report: Cyber Command Center`. See `SECURITY.md` for scope, data lifecycle, known gaps, and incident reporting details.
 

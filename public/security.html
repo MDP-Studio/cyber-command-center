@@ -50,7 +50,7 @@
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
       <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
-      <li>A report-only Content Security Policy allows the app, Google Fonts, and <code>https://c3-api.mdpstudio.com.au</code>.</li>
+      <li>An enforcing Content Security Policy allows the app, Google Fonts, and <code>https://c3-api.mdpstudio.com.au</code>.</li>
     </ul>
 
     <h2>Data Lifecycle</h2>
@@ -71,14 +71,13 @@
     </ul>
 
     <h2>Content Security Policy</h2>
-    <p>A <code>Content-Security-Policy-Report-Only</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs and reports violations to <code>https://c3-api.mdpstudio.com.au/api/csp-report</code>.</p>
-    <p>The policy remains report-only until the remote API, tunnel, migration, and production smoke tests pass. After that, the header should be promoted to enforcing.</p>
+    <p>A <code>Content-Security-Policy</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs and reports violations to <code>https://c3-api.mdpstudio.com.au/api/csp-report</code>.</p>
+    <p>The policy was promoted after the remote API, tunnel, migration, backup restore, and production API smoke tests passed.</p>
 
     <h2>Known Gaps</h2>
     <ul>
       <li>No formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.</li>
-      <li>The backend must pass health, migration, backup restore, and migrated-user smoke tests before it is treated as production-ready.</li>
-      <li>SMTP is required for production password reset emails.</li>
+      <li>Remaining account-level validation should be completed by one migrated Google user and the migrated email/password user in a browser.</li>
       <li>Incident response is manual and best effort.</li>
     </ul>
 
