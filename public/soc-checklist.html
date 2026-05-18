@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOC Analyst Checklist - Cyber Command Center</title>
+  <meta name="description" content="A beginner-friendly SOC analyst checklist for alert triage, evidence capture, escalation notes, and daily cybersecurity study habits." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://c3.mdpstudio.com.au/soc-checklist" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a12; color: rgba(255,255,255,0.85); font-family: "Space Grotesk", system-ui, sans-serif; line-height: 1.7; }
+    .container { max-width: 860px; margin: 0 auto; padding: 56px 24px 84px; }
+    a { color: #00ffc8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back { display: inline-block; margin-bottom: 32px; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+    .meta { color: rgba(255,255,255,0.42); font-family: "JetBrains Mono", monospace; font-size: 12px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0; }
+    h1 { max-width: 780px; color: #00ffc8; font-family: "JetBrains Mono", monospace; font-size: clamp(30px, 5vw, 50px); line-height: 1.07; margin-bottom: 18px; }
+    .lead { max-width: 720px; color: rgba(255,255,255,0.72); font-size: 18px; line-height: 1.65; margin-bottom: 34px; }
+    section { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 26px; margin-top: 28px; }
+    h2 { color: rgba(255,255,255,0.96); font-size: 21px; margin-bottom: 12px; }
+    p, li { color: rgba(255,255,255,0.7); font-size: 15px; margin-bottom: 10px; }
+    ul { padding-left: 20px; }
+    .note { margin-top: 32px; padding: 20px; border: 1px solid rgba(0,255,200,0.25); background: rgba(0,255,200,0.055); border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <main class="container" itemscope itemtype="https://schema.org/HowTo">
+    <a href="/" class="back">&larr; Back to Cyber Command Center</a>
+    <p class="meta">SOC analyst checklist</p>
+    <h1 itemprop="name">A practical checklist for alert triage and analyst notes.</h1>
+    <p class="lead" itemprop="description">This checklist helps new analysts slow down, preserve evidence, and write triage notes that can be reviewed later. It is deliberately simple because first-line SOC work rewards consistency.</p>
+
+    <section itemprop="step" itemscope itemtype="https://schema.org/HowToStep">
+      <h2 itemprop="name">1. Confirm the alert context</h2>
+      <ul>
+        <li>Record alert name, source, timestamp, user, host, IP address, and any ticket ID.</li>
+        <li>Check whether the alert is new, repeated, or part of a known maintenance window.</li>
+        <li>Do not decide severity before looking at the supporting evidence.</li>
+      </ul>
+    </section>
+
+    <section itemprop="step" itemscope itemtype="https://schema.org/HowToStep">
+      <h2 itemprop="name">2. Preserve the useful evidence</h2>
+      <ul>
+        <li>Capture relevant logs, URLs, hashes, sender details, process names, command lines, and screenshots.</li>
+        <li>Keep raw evidence separate from your interpretation.</li>
+        <li>For suspicious email, save the original message when possible so headers and attachments are preserved.</li>
+      </ul>
+    </section>
+
+    <section itemprop="step" itemscope itemtype="https://schema.org/HowToStep">
+      <h2 itemprop="name">3. Test the obvious benign explanations</h2>
+      <ul>
+        <li>Look for expected software updates, scheduled jobs, admin activity, user travel, or known vendor tools.</li>
+        <li>Compare the event to normal behavior for the user, host, or application.</li>
+        <li>Write down uncertainty instead of hiding it.</li>
+      </ul>
+    </section>
+
+    <section itemprop="step" itemscope itemtype="https://schema.org/HowToStep">
+      <h2 itemprop="name">4. Escalate with a readable summary</h2>
+      <ul>
+        <li>State what happened, what evidence supports it, what is still unknown, and what you recommend next.</li>
+        <li>Include direct links or references to the evidence, not just a conclusion.</li>
+        <li>Keep the summary short enough that the next analyst can act on it quickly.</li>
+      </ul>
+    </section>
+
+    <div class="note">
+      <h2>Track practice work</h2>
+      <p>Use the Cyber Command Center timer and notes to practice this checklist during labs, CTF writeups, phishing reviews, and incident-response exercises.</p>
+      <p><a href="/">Open the tracker</a> or read the <a href="/roadmap">cybersecurity study roadmap</a>.</p>
+    </div>
+  </main>
+</body>
+</html>

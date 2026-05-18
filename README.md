@@ -57,6 +57,7 @@ If `VITE_C3_API_URL` is empty, the app runs in guest-only mode. Signed-in sync u
 **Frontend:** Netlify remains the production frontend host. Set `VITE_C3_API_URL=https://c3-api.mdpstudio.com.au` only after the remote API passes health, migration, backup, and smoke tests.
 
 **Search readiness:** `public/robots.txt` and `public/sitemap.xml` publish the canonical `https://c3.mdpstudio.com.au` URLs for the dashboard, privacy, terms, and security pages.
+Public growth pages live at `/roadmap` and `/soc-checklist` so the project can rank for student and junior analyst learning searches, not only branded app queries.
 
 **Backend:** run `docker-compose.remote.yml` on the remote PC. It starts the Fastify API, a private Postgres container, and a scheduled backup container. Postgres must stay off the public internet.
 

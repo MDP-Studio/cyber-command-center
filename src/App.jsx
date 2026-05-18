@@ -330,6 +330,58 @@ function ProjectAboutPanel() {
   );
 }
 
+function StudyResourcesPanel() {
+  const resources = [
+    {
+      title: "Cybersecurity study roadmap",
+      text: "A six-phase learning path for foundations, SOC work, offensive basics, forensics, governance, and certification prep.",
+      href: "/roadmap",
+    },
+    {
+      title: "SOC analyst checklist",
+      text: "A practical checklist for alerts, evidence capture, triage notes, escalation, and daily study habits.",
+      href: "/soc-checklist",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="public-resources-title" style={{
+      margin: "18px 16px 0",
+      padding: 20,
+      background: "rgba(0,255,200,0.035)",
+      border: `1px solid ${accent}25`,
+      borderRadius: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontFamily: mono, color: accent, letterSpacing: 0, marginBottom: 10 }}>PUBLIC STUDY RESOURCES</div>
+          <h2 id="public-resources-title" style={{ margin: 0, color: "#fff", fontSize: 20, fontFamily: sans, fontWeight: 700 }}>
+            Searchable guides for students and junior security analysts.
+          </h2>
+          <p style={{ margin: "9px 0 0", color: dim, fontSize: 14, lineHeight: 1.6 }}>
+            These pages explain the learning path behind the tracker, so visitors can use the project even before creating progress data.
+          </p>
+        </div>
+        <div style={{ display: "grid", gap: 10, flex: "1 1 360px" }}>
+          {resources.map((resource) => (
+            <a key={resource.href} href={resource.href} style={{
+              display: "block",
+              padding: 14,
+              background: "rgba(255,255,255,0.035)",
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 8,
+              textDecoration: "none",
+            }}>
+              <strong style={{ display: "block", color: accent, fontSize: 13, fontFamily: mono, marginBottom: 5 }}>{resource.title}</strong>
+              <span style={{ display: "block", color: dim, fontSize: 13, lineHeight: 1.5 }}>{resource.text}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeedbackPanel() {
   const feedbackLink = "mailto:meidie@mdpstudio.com.au?subject=Feedback:%20Cyber%20Command%20Center&body=Project:%20Cyber%20Command%20Center%0ALink:%20https%3A%2F%2Fc3.mdpstudio.com.au%0AWhat%20happened:%0AWhat%20you%20expected:%0A%0APlease%20do%20not%20include%20passwords%2C%20API%20keys%2C%20private%20account%20data%2C%20client%20data%2C%20or%20payment%20details.";
 
@@ -495,6 +547,7 @@ function Dashboard({ user, signOut, isGuest }) {
       </div>
 
       <ProjectAboutPanel />
+      <StudyResourcesPanel />
 
       {/* Content */}
       <main style={{ padding: "20px 16px 120px" }}>
