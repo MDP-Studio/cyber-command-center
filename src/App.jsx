@@ -371,7 +371,7 @@ function FeedbackPanel() {
 }
 
 function Dashboard({ user, signOut, isGuest }) {
-  const { progress, loaded, toggleTask } = useProgress(user.id);
+  const { progress, loaded, toggleTask, error: progressError } = useProgress(user.id);
   const { notes, updateNote } = useNotes(user.id);
   const { logs, addSession } = useSessions(user.id);
   const [openPhases, setOpenPhases] = useState({});
@@ -487,6 +487,11 @@ function Dashboard({ user, signOut, isGuest }) {
             borderRadius: 2, transition: "width 0.5s ease",
           }} />
         </div>
+        {progressError && (
+          <div role="status" style={{ marginTop: 10, color: "#ff2d6b", fontSize: 12, fontFamily: mono }}>
+            {progressError}
+          </div>
+        )}
       </div>
 
       <ProjectAboutPanel />

@@ -284,6 +284,24 @@ test('state-changing routes reject disallowed origins with 403', async () => {
   await app.close();
 });
 
+test('CORS preflight allows signed-in mutating routes', async () => {
+  const { app } = appWith();
+  const response = await app.inject({
+    method: 'OPTIONS',
+    url: '/api/progress/f1',
+    headers: {
+      origin: ORIGIN,
+      'access-control-request-method': 'PUT',
+      'access-control-request-headers': 'content-type,x-csrf-token',
+    },
+  });
+  assert.equal(response.statusCode, 204);
+  assert.match(response.headers['access-control-allow-methods'], /PUT/);
+  assert.match(response.headers['access-control-allow-methods'], /DELETE/);
+  assert.match(response.headers['access-control-allow-headers'], /x-csrf-token/);
+  await app.close();
+});
+
 test('account deletion cascades app data and clears session', async () => {
   const { app, db } = appWith();
   const signup = await app.inject({

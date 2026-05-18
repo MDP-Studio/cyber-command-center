@@ -76,9 +76,12 @@ const isGuest = (userId) => userId === "guest";
 export function useProgress(userId) {
   const [progress, setProgress] = useState({});
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!userId) return;
+    setLoaded(false);
+    setError("");
     if (isGuest(userId)) {
       try { setProgress(JSON.parse(localStorage.getItem("ccc_progress") || "{}")); } catch { /* ignore */ }
       setLoaded(true);
@@ -90,11 +93,16 @@ export function useProgress(userId) {
         (rows || []).forEach((row) => { if (row.completed) map[row.task_id] = true; });
         setProgress(map);
       })
+      .catch(() => {
+        setProgress({});
+        setError("Progress could not be loaded. Try refreshing.");
+      })
       .finally(() => setLoaded(true));
   }, [userId]);
 
   const toggleTask = useCallback(async (taskId) => {
     const newVal = !progress[taskId];
+    setError("");
     setProgress((p) => {
       const next = { ...p, [taskId]: newVal };
       if (isGuest(userId)) localStorage.setItem("ccc_progress", JSON.stringify(next));
@@ -102,11 +110,16 @@ export function useProgress(userId) {
     });
 
     if (!isGuest(userId)) {
-      await c3Api.setProgress(taskId, newVal);
+      try {
+        await c3Api.setProgress(taskId, newVal);
+      } catch {
+        setProgress((p) => ({ ...p, [taskId]: !newVal }));
+        setError("Progress could not be saved. Please retry.");
+      }
     }
   }, [userId, progress]);
 
-  return { progress, loaded, toggleTask };
+  return { progress, loaded, toggleTask, error };
 }
 
 export function useNotes(userId) {

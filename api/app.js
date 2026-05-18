@@ -173,6 +173,8 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
   app.register(cookie);
   app.register(cors, {
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['content-type', config.csrfHeader],
     origin(origin, callback) {
       if (!origin || isAllowedOrigin(config, origin)) return callback(null, true);
       return callback(null, false);
