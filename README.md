@@ -4,6 +4,8 @@ A self-directed cybersecurity training platform with progress tracking, study ti
 
 **[Live Demo](https://c3.mdpstudio.com.au)** - try it now, no account needed.
 
+**MDP Studio project page:** [CyberRoadmap / C3](https://mdpstudio.com.au/projects/cybersecurity-study-roadmap/)
+
 ## Screenshots
 
 ### Login & Guest Access

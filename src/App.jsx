@@ -12,6 +12,7 @@ const cardBorder = "rgba(255,255,255,0.1)";
 const dim = "rgba(255,255,255,0.55)";
 const dimmer = "rgba(255,255,255,0.35)";
 const accent = "#00ffc8";
+const mdpProjectUrl = "https://mdpstudio.com.au/projects/cybersecurity-study-roadmap/";
 
 function fmt(s) {
   const h = Math.floor(s / 3600);
@@ -316,6 +317,18 @@ function ProjectAboutPanel() {
           <p style={{ margin: "10px 0 0", color: dimmer, fontSize: 13, lineHeight: 1.6 }}>
             Built by Meidie Fei as part of a cybersecurity portfolio focused on practical training workflows and safe account boundaries.
           </p>
+          <a href={mdpProjectUrl} target="_blank" rel="noopener noreferrer" style={{
+            display: "inline-flex",
+            marginTop: 14,
+            color: accent,
+            fontSize: 12,
+            fontFamily: mono,
+            fontWeight: 800,
+            letterSpacing: 0,
+            textDecoration: "none",
+          }}>
+            View the MDP Studio project page
+          </a>
         </div>
         <div style={{ display: "grid", gap: 10 }}>
           {items.map((item) => (

@@ -6,6 +6,7 @@ const sans = "'Space Grotesk', sans-serif";
 const accent = "#00ffc8";
 const dim = "rgba(255,255,255,0.55)";
 const dimmer = "rgba(255,255,255,0.35)";
+const mdpProjectUrl = "https://mdpstudio.com.au/projects/cybersecurity-study-roadmap/";
 
 const inputStyle = {
   width: "100%",
@@ -79,6 +80,7 @@ export default function Auth({ onAuth }) {
         }
       }
     } catch (e) {
+      console.error("Authentication action failed", e);
       setError(e.message);
     }
     setLoading(false);
@@ -125,6 +127,18 @@ export default function Auth({ onAuth }) {
           <p style={{ margin: "10px 0 0", color: dim, fontSize: 13, lineHeight: 1.6 }}>
             Track 49 tasks across 6 phases, log study sessions, keep task notes, and use guest mode instantly without creating an account.
           </p>
+          <a href={mdpProjectUrl} target="_blank" rel="noopener noreferrer" style={{
+            display: "inline-flex",
+            marginTop: 12,
+            color: accent,
+            fontSize: 12,
+            fontFamily: mono,
+            fontWeight: 800,
+            letterSpacing: 0,
+            textDecoration: "none",
+          }}>
+            View the MDP Studio project page
+          </a>
         </section>
 
         {/* Form only shows when the self-hosted API is configured */}
