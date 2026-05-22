@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth, useProgress, useNotes, useSessions } from './hooks';
+import { useAccountSecurity, useAuth, useProgress, useNotes, useSessions } from './hooks';
 import { apiConfigured } from './apiClient';
 import { PHASES, PLATFORMS } from './data';
 import Auth from './Auth';
+import AccountSecurityPanel from './AccountSecurityPanel';
 import PrivacyPanel from './PrivacyPanel';
 
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
@@ -295,6 +296,10 @@ function ProjectAboutPanel() {
       label: "Security boundary",
       text: "The API enforces per-user access, while guest mode avoids account setup entirely.",
     },
+    {
+      label: "Who it is for",
+      text: "Cyber Command Center is for cybersecurity students and junior analysts who need a repeatable study roadmap, not a certified training provider or enterprise learning platform.",
+    },
   ];
 
   return (
@@ -439,6 +444,7 @@ function Dashboard({ user, signOut, isGuest }) {
   const { progress, loaded, toggleTask, error: progressError } = useProgress(user.id);
   const { notes, updateNote } = useNotes(user.id);
   const { logs, addSession } = useSessions(user.id);
+  const accountSecurity = useAccountSecurity(user.id, isGuest);
   const [openPhases, setOpenPhases] = useState({});
   const [tab, setTab] = useState("phases");
   const [logOpen, setLogOpen] = useState(true);
@@ -592,7 +598,15 @@ function Dashboard({ user, signOut, isGuest }) {
             </div>
           </>
         )}
-        <PrivacyPanel user={user} isGuest={isGuest} />
+        {!isGuest && (
+          <AccountSecurityPanel
+            status={accountSecurity.status}
+            loaded={accountSecurity.loaded}
+            error={accountSecurity.error}
+            onChanged={accountSecurity.reload}
+          />
+        )}
+        <PrivacyPanel user={user} isGuest={isGuest} accountSecurity={accountSecurity.status} />
         <FeedbackPanel />
       </main>
 
