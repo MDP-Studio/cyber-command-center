@@ -25,7 +25,7 @@
   <div class="container">
     <a href="/" class="back">&larr; Back to Cyber Command Center</a>
     <h1>Security Policy</h1>
-    <p class="subtitle">Last updated: May 15, 2026</p>
+    <p class="subtitle">Last updated: May 22, 2026</p>
 
     <div class="notice">
       <p>Cyber Command Center is a portfolio and training workflow project. It is not a certified enterprise platform, managed SOC service, or place to store sensitive client data, lab credentials, payment details, or production incident evidence.</p>
@@ -43,6 +43,8 @@
     <ul>
       <li>Optional guest mode for no-account use.</li>
       <li>Email/password auth and Google OAuth through the self-hosted API.</li>
+      <li>Optional authenticator MFA for email/password accounts. Once enabled, password login requires a valid 6-digit TOTP code before a session is issued.</li>
+      <li>High-risk account actions are marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.</li>
       <li>Bcrypt password hashes and hashed server-side session tokens.</li>
       <li><code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code> session cookies in production.</li>
       <li>Allowed-origin and CSRF checks for state-changing signed-in routes.</li>
@@ -58,7 +60,7 @@
     <p>Guest progress, notes, and sessions stay in browser local storage until you clear site data or use the Privacy Controls panel.</p>
 
     <h3>Signed-in mode</h3>
-    <p>Account identity, progress, notes, and study sessions are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
+    <p>Account identity, authenticator MFA state if enabled, progress, notes, and study sessions are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
 
     <h3>Data minimization</h3>
     <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes.</p>
@@ -67,7 +69,8 @@
     <p>The signed-in dashboard includes a Privacy Controls panel with two self-service actions:</p>
     <ul>
       <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
-      <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, and reloads.</li>
+      <li><strong>Authenticator MFA</strong>: email/password users can generate a TOTP setup key, verify one code, and later disable MFA only after entering a valid code.</li>
+      <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, and an MFA code when enabled, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, and reloads.</li>
     </ul>
 
     <h2>Content Security Policy</h2>
@@ -77,7 +80,7 @@
     <h2>Known Gaps</h2>
     <ul>
       <li>No formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.</li>
-      <li>Remaining account-level validation should be completed by one migrated Google user and the migrated email/password user in a browser.</li>
+      <li>The MFA pilot still needs browser validation with the first small user group, including sign-in friction and recovery handling.</li>
       <li>Incident response is manual and best effort.</li>
     </ul>
 

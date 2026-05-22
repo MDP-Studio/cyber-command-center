@@ -1,6 +1,6 @@
 # Self-Hosted Backend Deployment
 
-Last updated: 2026-05-15
+Last updated: 2026-05-22
 
 Cyber Command Center now uses Netlify for the static frontend and a self-hosted Docker backend for signed-in accounts. Guest mode still works without any backend.
 
@@ -105,6 +105,7 @@ Keep Supabase as rollback/archive for 14 days after cutover. Remove Supabase env
 
 - `GET /api/health` returns `{ "ok": true }`.
 - Email/password login works for the migrated email user after password reset.
+- Optional authenticator MFA can be enabled for an email/password account, blocks password login until a valid code is submitted, and requires a code for account deletion.
 - Google login works for the 3 migrated Google users.
 - Dashboard loads progress, notes, and study sessions.
 - Export downloads all user-scoped data.

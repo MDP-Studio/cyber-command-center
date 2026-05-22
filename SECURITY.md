@@ -1,6 +1,6 @@
 # Security Policy
 
-Last updated: 2026-05-15
+Last updated: 2026-05-22
 
 Cyber Command Center is a free cybersecurity training tracker. This policy documents the current security model, data lifecycle, incident reporting process, and known limits so the product's security posture is explicit instead of implied.
 
@@ -28,6 +28,7 @@ Out of scope:
 
 - Account identity: user ID, email address, optional display name, and optional Google OAuth subject.
 - Session state: hashed session tokens and CSRF token hashes in the backend database.
+- Account MFA state: authenticator secret, pending setup secret, MFA enabled timestamp, and hashed short-lived login challenge tokens.
 - Training progress: completed task IDs and completion timestamps.
 - Task notes: free-text notes entered by the user.
 - Study sessions: timer labels, duration, dates, and created timestamps.
@@ -45,6 +46,9 @@ Out of scope:
 
 - Optional guest mode lets users avoid account creation.
 - Email/password auth and Google OAuth are handled by the self-hosted API.
+- Email/password accounts can opt in to authenticator MFA. Once enabled, password login returns a short-lived MFA challenge instead of a session until a valid 6-digit TOTP code is submitted.
+- High-risk account actions are explicitly marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.
+- Google-only accounts should use Google Account 2-Step Verification for sign-in. App-level authenticator MFA is currently enabled only for email/password accounts.
 - Passwords are stored only as bcrypt hashes.
 - Session cookies are `HttpOnly`, `Secure` in production, `SameSite=Lax`, and backed by hashed server-side session tokens.
 - State-changing signed-in routes require a valid session, an allowed `Origin`, and a CSRF token.
@@ -60,7 +64,7 @@ Out of scope:
 ### Known Gaps
 
 - There is no formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.
-- The remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import, and API smoke tests have passed. Remaining account-level validation should be completed by one migrated Google user and the migrated email/password user in a browser.
+- The remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import, and API smoke tests have passed. The MFA pilot still needs browser validation with the first small user group, including sign-in friction and recovery handling.
 - SMTP is required for production password reset emails. `AUTH_LOG_RESET_LINKS=true` is development-only.
 - Incident response is currently manual.
 - Task notes are free text. Users should not store passwords, API keys, customer data, private lab flags, payment data, or live incident evidence in notes.
@@ -80,10 +84,11 @@ The current policy is shipped as enforcing `Content-Security-Policy` from both `
 
 ## Self-Service Privacy Actions
 
-The signed-in dashboard exposes a Privacy Controls section with two actions:
+The signed-in dashboard exposes Account Security and Privacy Controls sections:
 
 - **Export My Data**: downloads a JSON snapshot of the user's profile, task progress, task notes, and study sessions. In guest mode, the same button dumps the `ccc_progress`, `ccc_notes`, and `ccc_sessions` localStorage keys.
-- **Delete My Account**: opens a "type DELETE to confirm" modal. On confirmation it calls the backend deletion route, deletes the account and user-scoped app data, clears guest localStorage keys defensively, and reloads. In guest mode the same flow clears localStorage and reloads.
+- **Authenticator MFA**: email/password users can generate a TOTP setup key, verify one code, and later disable MFA only after entering a valid code.
+- **Delete My Account**: opens a "type DELETE to confirm" modal. If MFA is enabled, the modal also requires a current MFA code. On confirmation it calls the backend deletion route, deletes the account and user-scoped app data, clears guest localStorage keys defensively, and reloads. In guest mode the same flow clears localStorage and reloads.
 
 Deleted records may remain in provider-managed backups for the normal backup retention window.
 
@@ -99,7 +104,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 
 ### Signed-In Mode
 
-- Stored data: account identity, hashed password if email/password is used, Google subject if OAuth is used, task progress, task notes, study sessions, sessions, reset tokens, and CSP reports.
+- Stored data: account identity, hashed password if email/password is used, Google subject if OAuth is used, authenticator MFA state if enabled, task progress, task notes, study sessions, sessions, reset tokens, MFA login challenge hashes, and CSP reports.
 - Storage location: self-hosted PostgreSQL in Docker on the remote PC.
 - Retention: kept until the user deletes the account or the project owner removes the account/data.
 - Deletion path: Privacy Controls panel or manual owner action.
@@ -140,6 +145,7 @@ Before shipping security-sensitive changes:
 - Run `npm run build`.
 - Run `npm audit`.
 - Run `npm run api:migrate` against the target database.
+- Verify MFA setup, MFA password login, MFA disable, and MFA-protected account deletion with an email/password account.
 - Verify `/api/health` locally and through `https://c3-api.mdpstudio.com.au`.
 - Verify migrated Google and email users can access their data.
 - Verify backup creation and one restore dry run.

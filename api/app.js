@@ -13,6 +13,8 @@ import {
   SESSION_COOKIE,
   clearCookie,
   cookieOptions,
+  formatTotpSecret,
+  generateTotpSecret,
   hashIp,
   hashPassword,
   hashToken,
@@ -21,7 +23,9 @@ import {
   publicUser,
   randomToken,
   sessionExpiresAt,
+  totpUri,
   verifyPassword,
+  verifyTotpCode,
 } from './security.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -33,6 +37,16 @@ function oneHourFromNow() {
   const expires = new Date();
   expires.setHours(expires.getHours() + 1);
   return expires;
+}
+
+function minutesFromNow(minutes) {
+  const expires = new Date();
+  expires.setMinutes(expires.getMinutes() + minutes);
+  return expires;
+}
+
+function isFuture(value) {
+  return value ? new Date(value).getTime() > Date.now() : false;
 }
 
 function maxAge(config) {
@@ -135,6 +149,7 @@ async function sessionFromRequest(db, request, reply, config, required = true) {
       email: session.email,
       display_name: session.display_name,
       google_subject: session.google_subject,
+      mfa_enabled_at: session.mfa_enabled_at,
     },
   };
 }
@@ -149,9 +164,37 @@ function validateReturnTo(config, returnTo) {
   try {
     const url = new URL(returnTo);
     return isAllowedOrigin(config, url.origin) ? url.origin : config.appOrigins[0];
-  } catch {
+  } catch (error) {
+    console.warn('Invalid OAuth returnTo URL was ignored', error);
     return config.appOrigins[0];
   }
+}
+
+function accountSecurityPayload(account) {
+  const mfaEnabled = Boolean(account?.mfa_enabled_at);
+  const passwordEnabled = Boolean(account?.password_hash);
+  const googleEnabled = Boolean(account?.google_subject);
+  return {
+    auth: {
+      provider: googleEnabled ? 'google' : 'email',
+      passwordEnabled,
+      googleEnabled,
+    },
+    mfa: {
+      enabled: mfaEnabled,
+      enabledAt: account?.mfa_enabled_at || null,
+      pendingSetupExpiresAt: account?.mfa_pending_expires_at || null,
+      loginProtected: passwordEnabled && mfaEnabled,
+      highRiskActions: mfaEnabled ? ['delete_account', 'disable_mfa'] : ['delete_account'],
+    },
+  };
+}
+
+function requireValidMfaCode(account, code, reply) {
+  if (!account?.mfa_enabled_at) return true;
+  if (verifyTotpCode(code, account.mfa_totp_secret)) return true;
+  reply.code(403).send({ error: 'MFA code required for this high-risk action.' });
+  return false;
 }
 
 export function createApp({ db, config = loadConfig(), mailer = createMailer(config), googleClient = defaultGoogleClient(config) }) {
@@ -165,7 +208,8 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
   app.addContentTypeParser(['application/csp-report', 'application/reports+json'], { parseAs: 'string' }, (_request, body, done) => {
     try {
       done(null, body ? JSON.parse(body) : {});
-    } catch {
+    } catch (error) {
+      app.log.warn({ err: error }, 'CSP report payload could not be parsed as JSON');
       done(null, { raw: body });
     }
   });
@@ -225,6 +269,28 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     const user = isValidEmail(email) ? await db.findUserByEmail(email) : null;
     if (!user || !(await verifyPassword(password, user.password_hash))) {
       return reply.code(401).send({ error: 'Invalid email or password.' });
+    }
+    if (user.mfa_enabled_at) {
+      const ticket = randomToken();
+      await db.createMfaChallenge({
+        userId: user.id,
+        token: ticket,
+        purpose: 'login',
+        expiresAt: minutesFromNow(10),
+      });
+      return { mfaRequired: true, ticket, email: user.email };
+    }
+    return createLoginSession(db, reply, config, user);
+  });
+
+  app.post('/api/auth/mfa/login/verify', async (request, reply) => {
+    const ticket = String(request.body?.ticket || '');
+    const code = String(request.body?.code || '');
+    const challenge = ticket ? await db.consumeMfaChallenge(ticket, 'login') : null;
+    if (!challenge) return reply.code(401).send({ error: 'MFA challenge is invalid or expired.' });
+    const user = await db.findUserById(challenge.user_id);
+    if (!user?.mfa_enabled_at || !verifyTotpCode(code, user.mfa_totp_secret)) {
+      return reply.code(401).send({ error: 'Invalid authenticator code.' });
     }
     return createLoginSession(db, reply, config, user);
   });
@@ -323,6 +389,60 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     return auth;
   }
 
+  app.get('/api/account/security', async (request, reply) => {
+    const auth = await requireAuth(request, reply);
+    if (!auth) return;
+    const account = await db.getAccountSecurity(auth.user.id);
+    return accountSecurityPayload(account);
+  });
+
+  app.post('/api/account/mfa/setup', async (request, reply) => {
+    const auth = await requireAuth(request, reply, true);
+    if (!auth) return;
+    const account = await db.findUserById(auth.user.id);
+    if (!account?.password_hash) {
+      return reply.code(400).send({ error: 'Authenticator MFA is available for email/password accounts.' });
+    }
+    if (account.mfa_enabled_at) {
+      return reply.code(409).send({ error: 'MFA is already enabled.' });
+    }
+    const secret = generateTotpSecret();
+    const expiresAt = minutesFromNow(15);
+    await db.setPendingMfaSecret(auth.user.id, secret, expiresAt);
+    return {
+      secret,
+      secretFormatted: formatTotpSecret(secret),
+      otpauthUri: totpUri({ accountName: account.email, secret }),
+      expiresAt,
+    };
+  });
+
+  app.post('/api/account/mfa/enable', async (request, reply) => {
+    const auth = await requireAuth(request, reply, true);
+    if (!auth) return;
+    const code = String(request.body?.code || '');
+    const account = await db.findUserById(auth.user.id);
+    if (!account?.mfa_pending_totp_secret || !isFuture(account.mfa_pending_expires_at)) {
+      return reply.code(400).send({ error: 'Start MFA setup again before verifying a code.' });
+    }
+    if (!verifyTotpCode(code, account.mfa_pending_totp_secret)) {
+      return reply.code(400).send({ error: 'Enter a valid 6-digit authenticator code.' });
+    }
+    const updated = await db.enableMfa(auth.user.id, account.mfa_pending_totp_secret);
+    return accountSecurityPayload(updated);
+  });
+
+  app.post('/api/account/mfa/disable', async (request, reply) => {
+    const auth = await requireAuth(request, reply, true);
+    if (!auth) return;
+    const code = String(request.body?.code || '');
+    const account = await db.findUserById(auth.user.id);
+    if (!account?.mfa_enabled_at) return accountSecurityPayload(account);
+    if (!requireValidMfaCode(account, code, reply)) return;
+    const updated = await db.disableMfa(auth.user.id);
+    return accountSecurityPayload(updated);
+  });
+
   app.get('/api/progress', async (request, reply) => {
     const auth = await requireAuth(request, reply);
     if (!auth) return;
@@ -383,6 +503,8 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
   app.delete('/api/privacy/account', async (request, reply) => {
     const auth = await requireAuth(request, reply, true);
     if (!auth) return;
+    const account = await db.findUserById(auth.user.id);
+    if (!requireValidMfaCode(account, request.body?.mfaCode, reply)) return;
     await db.deleteAccount(auth.user.id);
     clearSessionCookies(reply, config);
     return { ok: true };

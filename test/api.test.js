@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createApp } from '../api/app.js';
-import { hashToken } from '../api/security.js';
+import { generateTotpCode, hashToken } from '../api/security.js';
 
 const ORIGIN = 'https://c3.mdpstudio.com.au';
 
@@ -13,6 +13,7 @@ class FakeDb {
     this.notes = [];
     this.studySessions = [];
     this.resets = [];
+    this.mfaChallenges = [];
     this.cspReports = [];
     this.nextId = 1;
   }
@@ -32,6 +33,10 @@ class FakeDb {
       google_subject: googleSubject,
       old_supabase_id: oldSupabaseId,
       created_at: new Date().toISOString(),
+      mfa_totp_secret: null,
+      mfa_enabled_at: null,
+      mfa_pending_totp_secret: null,
+      mfa_pending_expires_at: null,
     };
     this.users.push(user);
     return user;
@@ -41,6 +46,10 @@ class FakeDb {
     const user = await this.findUserById(userId);
     user.google_subject = googleSubject;
     return user;
+  }
+
+  async getAccountSecurity(userId) {
+    return this.findUserById(userId);
   }
 
   async setPasswordHash(userId, passwordHash) {
@@ -72,6 +81,7 @@ class FakeDb {
       email: user.email,
       display_name: user.display_name,
       google_subject: user.google_subject,
+      mfa_enabled_at: user.mfa_enabled_at,
     };
   }
 
@@ -90,6 +100,57 @@ class FakeDb {
     this.sessions
       .filter((session) => session.user_id === userId)
       .forEach((session) => { session.revoked_at = new Date(); });
+  }
+
+  async setPendingMfaSecret(userId, secret, expiresAt) {
+    const user = await this.findUserById(userId);
+    user.mfa_pending_totp_secret = secret;
+    user.mfa_pending_expires_at = expiresAt;
+    return user;
+  }
+
+  async enableMfa(userId, secret) {
+    const user = await this.findUserById(userId);
+    user.mfa_totp_secret = secret;
+    user.mfa_enabled_at = new Date().toISOString();
+    user.mfa_pending_totp_secret = null;
+    user.mfa_pending_expires_at = null;
+    return user;
+  }
+
+  async disableMfa(userId) {
+    const user = await this.findUserById(userId);
+    user.mfa_totp_secret = null;
+    user.mfa_enabled_at = null;
+    user.mfa_pending_totp_secret = null;
+    user.mfa_pending_expires_at = null;
+    return user;
+  }
+
+  async createMfaChallenge({ userId, token, purpose, expiresAt }) {
+    const challenge = {
+      id: `mfa-${this.nextId++}`,
+      user_id: userId,
+      token_hash: hashToken(token),
+      purpose,
+      expires_at: expiresAt,
+      used_at: null,
+    };
+    this.mfaChallenges.push(challenge);
+    return challenge;
+  }
+
+  async consumeMfaChallenge(token, purpose) {
+    const tokenHash = hashToken(token);
+    const challenge = this.mfaChallenges.find((item) => (
+      item.token_hash === tokenHash
+      && item.purpose === purpose
+      && !item.used_at
+      && item.expires_at > new Date()
+    ));
+    if (!challenge) return null;
+    challenge.used_at = new Date();
+    return challenge;
   }
 
   async getProgress(userId) {
@@ -132,8 +193,16 @@ class FakeDb {
   }
 
   async exportUser(userId) {
+    const user = await this.findUserById(userId);
     return {
-      profile: await this.findUserById(userId),
+      profile: user ? {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        old_supabase_id: user.old_supabase_id,
+        created_at: user.created_at,
+        mfa_enabled_at: user.mfa_enabled_at,
+      } : null,
       task_progress: await this.getProgress(userId),
       task_notes: await this.getNotes(userId),
       study_sessions: await this.getSessions(userId),
@@ -389,6 +458,103 @@ test('password reset token is one-time use', async () => {
     payload: { token: sent[0].token, password: 'another-long-password' },
   });
   assert.equal(replay.statusCode, 400);
+  await app.close();
+});
+
+test('authenticator MFA setup makes password login require a second factor', async () => {
+  const { app } = appWith();
+  const signup = await app.inject({
+    method: 'POST',
+    url: '/api/auth/signup',
+    headers: { origin: ORIGIN },
+    payload: { email: 'mfa@example.com', password: 'long-password', displayName: 'MFA' },
+  });
+  assert.equal(signup.statusCode, 200);
+  const cookies = cookieHeader(signup);
+  const csrfToken = body(signup).csrfToken;
+
+  const setup = await app.inject({
+    method: 'POST',
+    url: '/api/account/mfa/setup',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+  });
+  assert.equal(setup.statusCode, 200);
+  const setupBody = body(setup);
+  assert.match(setupBody.otpauthUri, /^otpauth:\/\/totp\//);
+
+  const enable = await app.inject({
+    method: 'POST',
+    url: '/api/account/mfa/enable',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: { code: generateTotpCode(setupBody.secret) },
+  });
+  assert.equal(enable.statusCode, 200);
+  assert.equal(body(enable).mfa.enabled, true);
+  assert.equal(body(enable).mfa.loginProtected, true);
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    headers: { origin: ORIGIN },
+    payload: { email: 'mfa@example.com', password: 'long-password' },
+  });
+  assert.equal(login.statusCode, 200);
+  assert.equal(body(login).mfaRequired, true);
+  assert.ok(body(login).ticket);
+  assert.equal(login.cookies.some((cookie) => cookie.name === 'c3_session'), false);
+
+  const verified = await app.inject({
+    method: 'POST',
+    url: '/api/auth/mfa/login/verify',
+    headers: { origin: ORIGIN },
+    payload: { ticket: body(login).ticket, code: generateTotpCode(setupBody.secret) },
+  });
+  assert.equal(verified.statusCode, 200);
+  assert.equal(body(verified).user.email, 'mfa@example.com');
+  assert.equal(body(verified).user.mfaEnabled, true);
+  await app.close();
+});
+
+test('MFA-enabled account deletion requires a valid step-up code', async () => {
+  const { app, db } = appWith();
+  const signup = await app.inject({
+    method: 'POST',
+    url: '/api/auth/signup',
+    headers: { origin: ORIGIN },
+    payload: { email: 'delete-mfa@example.com', password: 'long-password', displayName: 'Delete MFA' },
+  });
+  const cookies = cookieHeader(signup);
+  const csrfToken = body(signup).csrfToken;
+  const setup = await app.inject({
+    method: 'POST',
+    url: '/api/account/mfa/setup',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+  });
+  const secret = body(setup).secret;
+  const enable = await app.inject({
+    method: 'POST',
+    url: '/api/account/mfa/enable',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: { code: generateTotpCode(secret) },
+  });
+  assert.equal(enable.statusCode, 200);
+
+  const blocked = await app.inject({
+    method: 'DELETE',
+    url: '/api/privacy/account',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+  });
+  assert.equal(blocked.statusCode, 403);
+  assert.equal(db.users.length, 1);
+
+  const deleted = await app.inject({
+    method: 'DELETE',
+    url: '/api/privacy/account',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: { mfaCode: generateTotpCode(secret) },
+  });
+  assert.equal(deleted.statusCode, 200);
+  assert.equal(db.users.length, 0);
   await app.close();
 });
 

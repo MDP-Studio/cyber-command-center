@@ -25,7 +25,8 @@ async function request(path, options = {}) {
   let data = {};
   try {
     data = text ? JSON.parse(text) : {};
-  } catch {
+  } catch (parseError) {
+    console.warn('API response was not valid JSON', parseError);
     data = { error: text || 'Unexpected API response.' };
   }
   if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
@@ -39,6 +40,9 @@ export const authApi = {
   },
   async signIn(email, password) {
     return request('/api/auth/login', { method: 'POST', body: { email, password } });
+  },
+  async verifyMfaLogin(ticket, code) {
+    return request('/api/auth/mfa/login/verify', { method: 'POST', body: { ticket, code } });
   },
   async signUp(email, password, displayName) {
     return request('/api/auth/signup', { method: 'POST', body: { email, password, displayName } });
@@ -61,6 +65,18 @@ export const authApi = {
 };
 
 export const c3Api = {
+  async getAccountSecurity() {
+    return request('/api/account/security');
+  },
+  async startMfaSetup() {
+    return request('/api/account/mfa/setup', { method: 'POST' });
+  },
+  async enableMfa(code) {
+    return request('/api/account/mfa/enable', { method: 'POST', body: { code } });
+  },
+  async disableMfa(code) {
+    return request('/api/account/mfa/disable', { method: 'POST', body: { code } });
+  },
   async getProgress() {
     return request('/api/progress');
   },
@@ -95,7 +111,10 @@ export const c3Api = {
   async exportAccount() {
     return request('/api/privacy/export');
   },
-  async deleteAccount() {
-    return request('/api/privacy/account', { method: 'DELETE' });
+  async deleteAccount(mfaCode) {
+    return request('/api/privacy/account', {
+      method: 'DELETE',
+      body: mfaCode ? { mfaCode } : {},
+    });
   },
 };

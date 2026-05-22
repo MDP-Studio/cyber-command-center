@@ -40,8 +40,11 @@ export default function Auth({ onAuth }) {
   const initialResetToken = apiConfigured
     ? new URLSearchParams(window.location.search).get("resetToken") || ""
     : "";
-  const [mode, setMode] = useState(initialResetToken ? "confirmReset" : "login"); // login | signup | reset | confirmReset
+  const [mode, setMode] = useState(initialResetToken ? "confirmReset" : "login"); // login | signup | reset | confirmReset | mfa
   const [resetToken, setResetToken] = useState(initialResetToken);
+  const [mfaTicket, setMfaTicket] = useState("");
+  const [mfaEmail, setMfaEmail] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -56,7 +59,19 @@ export default function Auth({ onAuth }) {
 
     try {
       if (mode === "login") {
-        const { error } = await onAuth.signIn(email, password);
+        const { data, error } = await onAuth.signIn(email, password);
+        if (error) setError(error.message);
+        else if (data?.mfaRequired) {
+          setMfaTicket(data.ticket);
+          setMfaEmail(data.email || email);
+          setMfaCode("");
+          setPassword("");
+          setMode("mfa");
+          setMessage("Enter your authenticator code to finish signing in.");
+        }
+      } else if (mode === "mfa") {
+        if (!mfaTicket) { setError("MFA challenge is missing. Log in again."); setLoading(false); return; }
+        const { error } = await onAuth.verifyMfaLogin(mfaTicket, mfaCode);
         if (error) setError(error.message);
       } else if (mode === "signup") {
         if (!name.trim()) { setError("Enter a display name"); setLoading(false); return; }
@@ -110,6 +125,7 @@ export default function Auth({ onAuth }) {
             {mode === "signup" && "Create your operator account"}
             {mode === "reset" && "Reset your access credentials"}
             {mode === "confirmReset" && "Set a new password"}
+            {mode === "mfa" && "Verify your authenticator code"}
           </p>
         </div>
 
@@ -150,7 +166,7 @@ export default function Auth({ onAuth }) {
             padding: 28,
           }}>
             {/* Google OAuth */}
-            {mode !== "reset" && mode !== "confirmReset" && (
+            {mode !== "reset" && mode !== "confirmReset" && mode !== "mfa" && (
               <>
                 <button onClick={() => { setError(""); onAuth.signInWithGoogle(); }} style={{
                   width: "100%", padding: "14px 0", background: "rgba(255,255,255,0.08)",
@@ -177,6 +193,11 @@ export default function Auth({ onAuth }) {
               </>
             )}
 
+            {mode === "mfa" && (
+              <p style={{ margin: "0 0 14px", color: dim, fontSize: 13, lineHeight: 1.6 }}>
+                Code required for {mfaEmail || "this account"}.
+              </p>
+            )}
             {mode === "signup" && (
               <input
                 type="text"
@@ -186,7 +207,7 @@ export default function Auth({ onAuth }) {
                 style={inputStyle}
               />
             )}
-            {mode !== "confirmReset" && (
+            {mode !== "confirmReset" && mode !== "mfa" && (
               <input
                 type="email"
                 placeholder="Email"
@@ -195,12 +216,24 @@ export default function Auth({ onAuth }) {
                 style={inputStyle}
               />
             )}
-            {mode !== "reset" && (
+            {mode !== "reset" && mode !== "mfa" && (
               <input
                 type="password"
                 placeholder={mode === "confirmReset" ? "New password" : "Password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                style={inputStyle}
+              />
+            )}
+            {mode === "mfa" && (
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 style={inputStyle}
               />
@@ -242,6 +275,7 @@ export default function Auth({ onAuth }) {
                 mode === "login" ? "LOG IN" :
                 mode === "signup" ? "CREATE ACCOUNT" :
                 mode === "confirmReset" ? "UPDATE PASSWORD" :
+                mode === "mfa" ? "VERIFY CODE" :
                 "SEND RESET LINK"
               }
             </button>
@@ -261,8 +295,8 @@ export default function Auth({ onAuth }) {
                   </button>
                 </>
               )}
-              {(mode === "signup" || mode === "reset" || mode === "confirmReset") && (
-                <button onClick={() => { if (mode === "confirmReset") window.history.replaceState(null, "", window.location.pathname); setMode("login"); setError(""); setMessage(""); setResetToken(""); }}
+              {(mode === "signup" || mode === "reset" || mode === "confirmReset" || mode === "mfa") && (
+                <button onClick={() => { if (mode === "confirmReset") window.history.replaceState(null, "", window.location.pathname); setMode("login"); setError(""); setMessage(""); setResetToken(""); setMfaTicket(""); setMfaCode(""); }}
                   style={{ background: "none", border: "none", color: dim, cursor: "pointer", fontFamily: mono, fontSize: 13 }}>
                   Back to login
                 </button>

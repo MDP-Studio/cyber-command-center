@@ -22,20 +22,20 @@
   <div class="container">
     <a href="/" class="back">&larr; Back to Cyber Command Center</a>
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Last updated: May 15, 2026</p>
+    <p class="subtitle">Last updated: May 22, 2026</p>
 
     <h2>What We Collect</h2>
     <p>Cyber Command Center collects the minimum data needed to provide synced training progress:</p>
     <ul>
       <li><strong>Account data</strong>: email address, display name, and optional Google login identifier.</li>
       <li><strong>Progress data</strong>: task completion status, study notes, and timer sessions.</li>
-      <li><strong>Authentication data</strong>: hashed passwords for email login, hashed session tokens, CSRF token hashes, and password-reset token hashes.</li>
+      <li><strong>Authentication data</strong>: hashed passwords for email login, hashed session tokens, CSRF token hashes, password-reset token hashes, and authenticator MFA state when enabled.</li>
       <li><strong>Security telemetry</strong>: CSP violation reports, user agent, and a hashed IP value for abuse triage.</li>
     </ul>
     <p>If you use guest mode, no account data is collected. Guest progress, notes, and sessions stay in your browser.</p>
 
     <h2>How We Use It</h2>
-    <p>Your data is used to save and sync your training progress across devices, authenticate your account, support password reset, and investigate security issues. We do not sell, share, or use your data for advertising.</p>
+    <p>Your data is used to save and sync your training progress across devices, authenticate your account, support MFA and password reset, and investigate security issues. We do not sell, share, or use your data for advertising.</p>
 
     <h2>Third-Party Services</h2>
     <ul>
@@ -60,7 +60,7 @@
     <p>The dashboard includes a Privacy Controls panel:</p>
     <ul>
       <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
-      <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, signs you out, and reloads.</li>
+      <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, and an MFA code when enabled, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, signs you out, and reloads.</li>
     </ul>
 
     <h2>Security</h2>

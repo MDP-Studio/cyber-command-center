@@ -12,7 +12,10 @@ export function useAuth() {
     }
     authApi.getSession()
       .then(({ user: sessionUser }) => setUser(sessionUser ?? null))
-      .catch(() => setUser(null))
+      .catch((error) => {
+        console.warn("Session lookup failed", error);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -22,6 +25,7 @@ export function useAuth() {
       setUser(data.user ?? null);
       return { data, error: null };
     } catch (error) {
+      console.warn("Sign in failed", error);
       return { data: null, error };
     }
   };
@@ -32,6 +36,18 @@ export function useAuth() {
       setUser(data.user ?? null);
       return { data, error: null };
     } catch (error) {
+      console.warn("MFA login verification failed", error);
+      return { data: null, error };
+    }
+  };
+
+  const verifyMfaLogin = async (ticket, code) => {
+    try {
+      const data = await authApi.verifyMfaLogin(ticket, code);
+      setUser(data.user ?? null);
+      return { data, error: null };
+    } catch (error) {
+      console.warn("Sign up failed", error);
       return { data: null, error };
     }
   };
@@ -46,6 +62,7 @@ export function useAuth() {
       const data = await authApi.resetPassword(email);
       return { data, error: null };
     } catch (error) {
+      console.warn("Password reset request failed", error);
       return { data: null, error };
     }
   };
@@ -55,6 +72,7 @@ export function useAuth() {
       const data = await authApi.confirmPasswordReset(token, password);
       return { data, error: null };
     } catch (error) {
+      console.warn("Password reset confirmation failed", error);
       return { data: null, error };
     }
   };
@@ -68,7 +86,7 @@ export function useAuth() {
     setUser({ id: "guest", email: "guest" });
   };
 
-  return { user, loading, signUp, signIn, signOut, resetPassword, confirmPasswordReset, signInWithGoogle, continueAsGuest };
+  return { user, loading, signUp, signIn, verifyMfaLogin, signOut, resetPassword, confirmPasswordReset, signInWithGoogle, continueAsGuest };
 }
 
 const isGuest = (userId) => userId === "guest";
@@ -83,7 +101,7 @@ export function useProgress(userId) {
     setLoaded(false);
     setError("");
     if (isGuest(userId)) {
-      try { setProgress(JSON.parse(localStorage.getItem("ccc_progress") || "{}")); } catch { /* ignore */ }
+      try { setProgress(JSON.parse(localStorage.getItem("ccc_progress") || "{}")); } catch (error) { console.warn("Guest progress could not be parsed", error); }
       setLoaded(true);
       return;
     }
@@ -93,7 +111,8 @@ export function useProgress(userId) {
         (rows || []).forEach((row) => { if (row.completed) map[row.task_id] = true; });
         setProgress(map);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn("Progress load failed", error);
         setProgress({});
         setError("Progress could not be loaded. Try refreshing.");
       })
@@ -112,7 +131,8 @@ export function useProgress(userId) {
     if (!isGuest(userId)) {
       try {
         await c3Api.setProgress(taskId, newVal);
-      } catch {
+      } catch (error) {
+        console.warn("Progress save failed", error);
         setProgress((p) => ({ ...p, [taskId]: !newVal }));
         setError("Progress could not be saved. Please retry.");
       }
@@ -128,7 +148,7 @@ export function useNotes(userId) {
   useEffect(() => {
     if (!userId) return;
     if (isGuest(userId)) {
-      try { setNotes(JSON.parse(localStorage.getItem("ccc_notes") || "{}")); } catch { /* ignore */ }
+      try { setNotes(JSON.parse(localStorage.getItem("ccc_notes") || "{}")); } catch (error) { console.warn("Guest notes could not be parsed", error); }
       return;
     }
     c3Api.getNotes()
@@ -137,7 +157,10 @@ export function useNotes(userId) {
         (rows || []).forEach((row) => { if (row.content) map[row.task_id] = row.content; });
         setNotes(map);
       })
-      .catch(() => setNotes({}));
+      .catch((error) => {
+        console.warn("Notes load failed", error);
+        setNotes({});
+      });
   }, [userId]);
 
   const updateNote = useCallback(async (taskId, content) => {
@@ -160,7 +183,7 @@ export function useSessions(userId) {
   useEffect(() => {
     if (!userId) return;
     if (isGuest(userId)) {
-      try { setLogs(JSON.parse(localStorage.getItem("ccc_sessions") || "{}")); } catch { /* ignore */ }
+      try { setLogs(JSON.parse(localStorage.getItem("ccc_sessions") || "{}")); } catch (error) { console.warn("Guest sessions could not be parsed", error); }
       return;
     }
     c3Api.getSessions()
@@ -173,7 +196,10 @@ export function useSessions(userId) {
         });
         setLogs(map);
       })
-      .catch(() => setLogs({}));
+      .catch((error) => {
+        console.warn("Sessions load failed", error);
+        setLogs({});
+      });
   }, [userId]);
 
   const addSession = useCallback(async (session) => {
@@ -190,4 +216,36 @@ export function useSessions(userId) {
   }, [userId]);
 
   return { logs, addSession };
+}
+
+export function useAccountSecurity(userId, isGuestMode) {
+  const [status, setStatus] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    if (!userId || isGuestMode) {
+      setStatus(null);
+      setLoaded(true);
+      return;
+    }
+    setLoaded(false);
+    setError('');
+    try {
+      const data = await c3Api.getAccountSecurity();
+      setStatus(data);
+    } catch (loadError) {
+      console.warn("Account security load failed", loadError);
+      setStatus(null);
+      setError(loadError.message || 'Account security could not be loaded.');
+    } finally {
+      setLoaded(true);
+    }
+  }, [isGuestMode, userId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { status, loaded, error, reload: load };
 }

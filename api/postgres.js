@@ -63,6 +63,17 @@ export class PostgresDatabase {
     return rows[0];
   }
 
+  async getAccountSecurity(userId) {
+    const { rows } = await this.query(
+      `select id, email, display_name, password_hash, google_subject, mfa_enabled_at,
+              mfa_pending_expires_at
+       from users
+       where id = $1`,
+      [userId],
+    );
+    return rows[0] || null;
+  }
+
   async updateGoogleSubject(userId, googleSubject) {
     const { rows } = await this.query(
       'update users set google_subject = $2, updated_at = now() where id = $1 returning *',
@@ -93,7 +104,7 @@ export class PostgresDatabase {
 
   async findSessionByToken(token) {
     const { rows } = await this.query(
-      `select s.*, u.email, u.display_name, u.google_subject
+      `select s.*, u.email, u.display_name, u.google_subject, u.mfa_enabled_at
        from sessions s
        join users u on u.id = s.user_id
        where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now()`,
@@ -122,6 +133,76 @@ export class PostgresDatabase {
       'update sessions set revoked_at = now() where user_id = $1 and revoked_at is null',
       [userId],
     );
+  }
+
+  async setPendingMfaSecret(userId, secret, expiresAt) {
+    const { rows } = await this.query(
+      `update users
+       set mfa_pending_totp_secret = $2,
+           mfa_pending_expires_at = $3,
+           updated_at = now()
+       where id = $1
+       returning id, email, display_name, password_hash, google_subject, mfa_enabled_at,
+                 mfa_pending_totp_secret, mfa_pending_expires_at`,
+      [userId, secret, expiresAt],
+    );
+    return rows[0] || null;
+  }
+
+  async enableMfa(userId, secret) {
+    const { rows } = await this.query(
+      `update users
+       set mfa_totp_secret = $2,
+           mfa_enabled_at = now(),
+           mfa_pending_totp_secret = null,
+           mfa_pending_expires_at = null,
+           updated_at = now()
+       where id = $1
+       returning id, email, display_name, password_hash, google_subject, mfa_enabled_at`,
+      [userId, secret],
+    );
+    return rows[0] || null;
+  }
+
+  async disableMfa(userId) {
+    const { rows } = await this.query(
+      `update users
+       set mfa_totp_secret = null,
+           mfa_enabled_at = null,
+           mfa_pending_totp_secret = null,
+           mfa_pending_expires_at = null,
+           updated_at = now()
+       where id = $1
+       returning id, email, display_name, password_hash, google_subject, mfa_enabled_at`,
+      [userId],
+    );
+    return rows[0] || null;
+  }
+
+  async createMfaChallenge({ userId, token, purpose, expiresAt }) {
+    const { rows } = await this.query(
+      `insert into mfa_challenges (user_id, token_hash, purpose, expires_at)
+       values ($1, $2, $3, $4)
+       returning id`,
+      [userId, hashToken(token), purpose, expiresAt],
+    );
+    return rows[0];
+  }
+
+  async consumeMfaChallenge(token, purpose) {
+    const tokenHash = hashToken(token);
+    return this.transaction(async (tx) => {
+      const { rows } = await tx.query(
+        `select * from mfa_challenges
+         where token_hash = $1 and purpose = $2 and used_at is null and expires_at > now()
+         for update`,
+        [tokenHash, purpose],
+      );
+      const challenge = rows[0] || null;
+      if (!challenge) return null;
+      await tx.query('update mfa_challenges set used_at = now() where id = $1', [challenge.id]);
+      return challenge;
+    });
   }
 
   async getProgress(userId) {

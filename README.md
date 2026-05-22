@@ -74,18 +74,19 @@ docker run -p 3000:3000 cyber-command
 
 - **Zero-friction guest mode** - works without any backend; progress is saved to localStorage.
 - **Google OAuth + email auth** - sign up, log in, and reset password through the self-hosted API.
+- **Optional authenticator MFA** - email/password accounts can require a 6-digit code at login and for high-risk account deletion.
 - **6-phase curriculum** - structured cybersecurity training across foundations, SOC, offense, forensics, governance, and certification prep.
 - **Real-time progress tracking** - synced across devices for signed-in users, local-only for guests.
 - **Study timer** - start, pause, and stop with labeled session logging.
 - **Training log** - daily breakdown, streak counter, and cumulative hours.
 - **Per-task notes** - keep commands, flags, findings, and reminders inline.
 - **Server-side access control** - each API request is scoped to the signed-in user.
-- **Privacy controls** - export data or delete the account from the dashboard.
+- **Account security and privacy controls** - enable MFA, export data, or delete the account from the dashboard.
 
 ## Tech Stack
 
 - **Frontend:** React 18, Vite, custom dark terminal aesthetic.
-- **Backend:** Fastify API, PostgreSQL, secure cookies, CSRF checks, Google OAuth, password reset, CSP reporting.
+- **Backend:** Fastify API, PostgreSQL, secure cookies, CSRF checks, Google OAuth, password reset, optional TOTP MFA, CSP reporting.
 - **Deployment:** Netlify frontend, remote Docker backend, Cloudflare Tunnel for the API.
 
 ## Architecture
@@ -105,7 +106,7 @@ If VITE_C3_API_URL is empty:
 
 ## Security
 
-Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped by the backend API, and task notes should not be used for secrets, client data, payment details, or incident evidence.
+Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped by the backend API, email/password accounts can opt in to authenticator MFA, and task notes should not be used for secrets, client data, payment details, or incident evidence.
 
 Production headers via `netlify.toml`:
 

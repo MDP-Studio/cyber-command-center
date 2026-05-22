@@ -30,7 +30,10 @@ function readGuestData() {
   const out = {};
   for (const key of GUEST_KEYS) {
     try { out[key] = JSON.parse(localStorage.getItem(key) || 'null'); }
-    catch { out[key] = null; }
+    catch (error) {
+      console.warn(`Guest data key ${key} could not be parsed`, error);
+      out[key] = null;
+    }
   }
   return out;
 }
@@ -39,12 +42,14 @@ function clearGuestData() {
   for (const key of GUEST_KEYS) localStorage.removeItem(key);
 }
 
-export default function PrivacyPanel({ user, isGuest }) {
+export default function PrivacyPanel({ user, isGuest, accountSecurity = null }) {
   const [busy, setBusy] = useState(null); // 'export' | 'delete' | null
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const deleteRequiresMfa = Boolean(!isGuest && accountSecurity?.mfa?.enabled);
 
   const handleExport = async () => {
     setBusy('export');
@@ -61,6 +66,7 @@ export default function PrivacyPanel({ user, isGuest }) {
       downloadJson(`c3-export-${todayKey()}.json`, payload);
       setMessage('Export downloaded.');
     } catch (e) {
+      console.error('Privacy export failed', e);
       setError(e.message || 'Export failed.');
     }
     setBusy(null);
@@ -74,16 +80,18 @@ export default function PrivacyPanel({ user, isGuest }) {
       if (isGuest) {
         clearGuestData();
       } else {
-        await c3Api.deleteAccount();
+        await c3Api.deleteAccount(deleteRequiresMfa ? mfaCode : undefined);
         clearGuestData();
       }
       setConfirmOpen(false);
       setConfirmText('');
+      setMfaCode('');
       // Hard reload: cleanest way to drop every in-memory hook cache across
       // guest and signed-in modes without threading state resets through
       // each hook.
       window.location.reload();
     } catch (e) {
+      console.error('Account deletion failed', e);
       setError(e.message || 'Delete failed.');
       setBusy(null);
     }
@@ -111,7 +119,8 @@ export default function PrivacyPanel({ user, isGuest }) {
 
       {!isGuest && (
         <p style={{ margin: '8px 0 0', color: dimmer, fontSize: 12, lineHeight: 1.6, fontFamily: mono }}>
-          Note: deleting removes your account record and training data from the self-hosted backend. Provider backups may retain deleted data for their normal retention window.
+          High-risk action: deleting removes your account record and training data from the self-hosted backend. Provider backups may retain deleted data for their normal retention window.
+          {deleteRequiresMfa ? ' MFA step-up is required.' : ''}
         </p>
       )}
 
@@ -175,7 +184,7 @@ export default function PrivacyPanel({ user, isGuest }) {
             padding: 24,
           }}>
             <div style={{ fontSize: 12, fontFamily: mono, color: danger, letterSpacing: '0.15em', marginBottom: 10 }}>
-              IRREVERSIBLE
+              {deleteRequiresMfa ? 'HIGH-RISK STEP-UP' : 'IRREVERSIBLE'}
             </div>
             <h3 id="confirm-title" style={{ margin: 0, color: '#fff', fontSize: 18, fontFamily: sans, fontWeight: 700 }}>
               {isGuest ? 'Clear local data?' : 'Delete your account data?'}
@@ -206,6 +215,32 @@ export default function PrivacyPanel({ user, isGuest }) {
                 marginBottom: 16,
               }}
             />
+            {deleteRequiresMfa && (
+              <>
+                <p style={{ margin: '0 0 8px', color: dim, fontSize: 13, fontFamily: mono }}>
+                  Enter your 6-digit MFA code.
+                </p>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${dimmer}`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontFamily: mono,
+                    outline: 'none',
+                    marginBottom: 16,
+                  }}
+                />
+              </>
+            )}
             {error && (
               <div role="alert" style={{
                 color: danger, fontSize: 13, fontFamily: mono,
@@ -213,7 +248,7 @@ export default function PrivacyPanel({ user, isGuest }) {
               }}>{error}</div>
             )}
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setConfirmOpen(false); setConfirmText(''); setError(''); }} disabled={busy === 'delete'} style={{
+              <button onClick={() => { setConfirmOpen(false); setConfirmText(''); setMfaCode(''); setError(''); }} disabled={busy === 'delete'} style={{
                 flex: 1, padding: '11px 0',
                 background: 'transparent',
                 border: `1px solid ${dimmer}`,
@@ -225,17 +260,17 @@ export default function PrivacyPanel({ user, isGuest }) {
                 letterSpacing: '0.1em',
                 cursor: 'pointer',
               }}>CANCEL</button>
-              <button onClick={handleDelete} disabled={confirmText !== 'DELETE' || busy === 'delete'} style={{
+              <button onClick={handleDelete} disabled={confirmText !== 'DELETE' || (deleteRequiresMfa && mfaCode.length !== 6) || busy === 'delete'} style={{
                 flex: 1, padding: '11px 0',
-                background: confirmText === 'DELETE' ? 'rgba(255,45,107,0.18)' : 'rgba(255,45,107,0.05)',
-                border: `1px solid ${danger}${confirmText === 'DELETE' ? '60' : '20'}`,
+                background: confirmText === 'DELETE' && (!deleteRequiresMfa || mfaCode.length === 6) ? 'rgba(255,45,107,0.18)' : 'rgba(255,45,107,0.05)',
+                border: `1px solid ${danger}${confirmText === 'DELETE' && (!deleteRequiresMfa || mfaCode.length === 6) ? '60' : '20'}`,
                 borderRadius: 8,
-                color: confirmText === 'DELETE' ? danger : dimmer,
+                color: confirmText === 'DELETE' && (!deleteRequiresMfa || mfaCode.length === 6) ? danger : dimmer,
                 fontSize: 12,
                 fontFamily: mono,
                 fontWeight: 800,
                 letterSpacing: '0.1em',
-                cursor: confirmText === 'DELETE' ? 'pointer' : 'not-allowed',
+                cursor: confirmText === 'DELETE' && (!deleteRequiresMfa || mfaCode.length === 6) ? 'pointer' : 'not-allowed',
               }}>{busy === 'delete' ? 'DELETING...' : 'CONFIRM DELETE'}</button>
             </div>
           </div>
