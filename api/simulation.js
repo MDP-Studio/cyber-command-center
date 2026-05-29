@@ -1,4 +1,4 @@
-﻿const EVENT_TYPES = new Set([
+const EVENT_TYPES = new Set([
   'phishing-email',
   'sms-phishing',
   'voice-social-engineering',

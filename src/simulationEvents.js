@@ -1,4 +1,4 @@
-﻿export const SIMULATION_EVENT_TYPES = [
+export const SIMULATION_EVENT_TYPES = [
   { value: 'phishing-email', label: 'Phishing email drill' },
   { value: 'sms-phishing', label: 'SMS phishing drill' },
   { value: 'voice-social-engineering', label: 'Voice social engineering' },
