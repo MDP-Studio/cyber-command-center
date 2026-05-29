@@ -12,6 +12,7 @@ class FakeDb {
     this.progress = [];
     this.notes = [];
     this.studySessions = [];
+    this.simulationEvents = [];
     this.resets = [];
     this.mfaChallenges = [];
     this.cspReports = [];
@@ -192,6 +193,24 @@ class FakeDb {
     return row;
   }
 
+  async addSimulationEvent(userId, event) {
+    const row = {
+      id: `sim-${this.nextId++}`,
+      user_id: userId,
+      ...event,
+      created_at: new Date().toISOString(),
+    };
+    this.simulationEvents.push(row);
+    return row;
+  }
+
+  async getSimulationEvents(userId, limit = 50) {
+    return this.simulationEvents
+      .filter((row) => row.user_id === userId)
+      .sort((a, b) => new Date(b.occurred_at) - new Date(a.occurred_at))
+      .slice(0, limit);
+  }
+
   async exportUser(userId) {
     const user = await this.findUserById(userId);
     return {
@@ -206,6 +225,7 @@ class FakeDb {
       task_progress: await this.getProgress(userId),
       task_notes: await this.getNotes(userId),
       study_sessions: await this.getSessions(userId),
+      simulation_events: await this.getSimulationEvents(userId, 500),
     };
   }
 
@@ -215,6 +235,7 @@ class FakeDb {
     this.progress = this.progress.filter((row) => row.user_id !== userId);
     this.notes = this.notes.filter((row) => row.user_id !== userId);
     this.studySessions = this.studySessions.filter((row) => row.user_id !== userId);
+    this.simulationEvents = this.simulationEvents.filter((row) => row.user_id !== userId);
   }
 
   async createPasswordResetToken({ userId, token, expiresAt }) {
@@ -387,6 +408,12 @@ test('account deletion cascades app data and clears session', async () => {
     headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
     payload: { completed: true },
   });
+  await app.inject({
+    method: 'POST',
+    url: '/api/simulation-events',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: { type: 'awareness-drill', outcome: 'completed', title: 'Delete coverage drill' },
+  });
   const deleted = await app.inject({
     method: 'DELETE',
     url: '/api/privacy/account',
@@ -395,6 +422,7 @@ test('account deletion cascades app data and clears session', async () => {
   assert.equal(deleted.statusCode, 200);
   assert.equal(db.users.length, 0);
   assert.equal(db.progress.length, 0);
+  assert.equal(db.simulationEvents.length, 0);
   await app.close();
 });
 
@@ -458,6 +486,62 @@ test('password reset token is one-time use', async () => {
     payload: { token: sent[0].token, password: 'another-long-password' },
   });
   assert.equal(replay.statusCode, 400);
+  await app.close();
+});
+
+test('simulation events require CSRF and feed risk summary plus export', async () => {
+  const { app } = appWith();
+  const signup = await app.inject({
+    method: 'POST',
+    url: '/api/auth/signup',
+    headers: { origin: ORIGIN },
+    payload: { email: 'risk@example.com', password: 'long-password', displayName: 'Risk' },
+  });
+  const cookies = cookieHeader(signup);
+  const csrfToken = body(signup).csrfToken;
+
+  const blocked = await app.inject({
+    method: 'POST',
+    url: '/api/simulation-events',
+    headers: { origin: ORIGIN, cookie: cookies },
+    payload: { type: 'phishing-email', outcome: 'clicked', title: 'Link click drill' },
+  });
+  assert.equal(blocked.statusCode, 403);
+
+  const saved = await app.inject({
+    method: 'POST',
+    url: '/api/simulation-events',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: {
+      type: 'phishing-email',
+      outcome: 'clicked',
+      title: 'Link click drill',
+      details: { channel: 'email', rawEmailBody: 'must not store this' },
+    },
+  });
+  assert.equal(saved.statusCode, 400);
+
+  const accepted = await app.inject({
+    method: 'POST',
+    url: '/api/simulation-events',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: {
+      type: 'phishing-email',
+      outcome: 'clicked',
+      title: 'Link click drill',
+      details: { channel: 'email', scenario: 'invoice lure' },
+    },
+  });
+  assert.equal(accepted.statusCode, 200);
+  assert.equal(body(accepted).riskSummary.summary.totalEvents, 1);
+  assert.equal(body(accepted).riskSummary.summary.currentRiskScore, 18);
+
+  const summary = await app.inject({ method: 'GET', url: '/api/risk-summary', headers: { cookie: cookies } });
+  assert.equal(summary.statusCode, 200);
+  assert.equal(body(summary).recentEvents[0].title, 'Link click drill');
+
+  const exported = await app.inject({ method: 'GET', url: '/api/privacy/export', headers: { cookie: cookies } });
+  assert.equal(body(exported).data.simulation_events.length, 1);
   await app.close();
 });
 

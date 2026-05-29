@@ -268,12 +268,44 @@ export class PostgresDatabase {
     return rows[0];
   }
 
+  async addSimulationEvent(userId, event) {
+    const { rows } = await this.query(
+      `insert into training_simulation_events
+         (user_id, event_type, outcome, title, risk_delta, occurred_at, details)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id, event_type, outcome, title, risk_delta, occurred_at, details, created_at`,
+      [
+        userId,
+        event.event_type,
+        event.outcome,
+        event.title,
+        event.risk_delta,
+        event.occurred_at,
+        event.details,
+      ],
+    );
+    return rows[0];
+  }
+
+  async getSimulationEvents(userId, limit = 50) {
+    const { rows } = await this.query(
+      `select id, event_type, outcome, title, risk_delta, occurred_at, details, created_at
+       from training_simulation_events
+       where user_id = $1
+       order by occurred_at desc, created_at desc
+       limit $2`,
+      [userId, limit],
+    );
+    return rows;
+  }
+
   async exportUser(userId) {
-    const [user, progress, notes, sessions] = await Promise.all([
+    const [user, progress, notes, sessions, simulationEvents] = await Promise.all([
       this.findUserById(userId),
       this.getProgress(userId),
       this.getNotes(userId),
       this.getSessions(userId),
+      this.getSimulationEvents(userId, 500),
     ]);
     return {
       profile: user ? {
@@ -286,6 +318,7 @@ export class PostgresDatabase {
       task_progress: progress,
       task_notes: notes,
       study_sessions: sessions,
+      simulation_events: simulationEvents,
     };
   }
 

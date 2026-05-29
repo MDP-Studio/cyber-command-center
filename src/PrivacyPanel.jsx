@@ -10,7 +10,7 @@ const dimmer = "rgba(255,255,255,0.35)";
 const cardBg = "rgba(255,255,255,0.03)";
 const cardBorder = "rgba(255,255,255,0.1)";
 
-const GUEST_KEYS = ['ccc_progress', 'ccc_notes', 'ccc_sessions'];
+const GUEST_KEYS = ['ccc_progress', 'ccc_notes', 'ccc_sessions', 'ccc_simulation_events'];
 
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 
@@ -114,7 +114,7 @@ export default function PrivacyPanel({ user, isGuest, accountSecurity = null }) 
       <p style={{ margin: '8px 0 0', color: dim, fontSize: 14, lineHeight: 1.6 }}>
         {isGuest
           ? 'Guest mode keeps everything in this browser. Export pulls a JSON copy; delete clears the local keys for this site.'
-          : 'Export downloads a JSON snapshot of your profile, task progress, notes, and study sessions. Delete removes every row scoped to your account.'}
+          : 'Export downloads a JSON snapshot of your profile, task progress, notes, study sessions, and simulation events. Delete removes every row scoped to your account.'}
       </p>
 
       {!isGuest && (

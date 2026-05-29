@@ -34,7 +34,7 @@
     <h2>Security Model</h2>
     <p>The app has two operating modes:</p>
     <ul>
-      <li><strong>Guest mode</strong>: progress, notes, and study sessions stay in browser local storage and are not synced by the app.</li>
+      <li><strong>Guest mode</strong>: progress, notes, study sessions, and simulation events stay in browser local storage and are not synced by the app.</li>
       <li><strong>Signed-in mode</strong>: the browser talks to the self-hosted API at <code>https://c3-api.mdpstudio.com.au</code>. The API owns auth, sessions, CSRF checks, user scoping, export, and deletion.</li>
     </ul>
     <p>PostgreSQL is private to Docker. Browser code must never receive database credentials, Google client secrets, SMTP secrets, service-role keys, or backup credentials.</p>
@@ -43,12 +43,13 @@
     <ul>
       <li>Optional guest mode for no-account use.</li>
       <li>Email/password auth and Google OAuth through the self-hosted API.</li>
+      <li>Simulation-risk tracking records drill metadata only. It does not send phishing messages, automate learners, or provide an enterprise admin console.</li>
       <li>Optional authenticator MFA for email/password accounts. Once enabled, password login requires a valid 6-digit TOTP code before a session is issued.</li>
       <li>High-risk account actions are marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.</li>
       <li>Bcrypt password hashes and hashed server-side session tokens.</li>
       <li><code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code> session cookies in production.</li>
       <li>Allowed-origin and CSRF checks for state-changing signed-in routes.</li>
-      <li>Server-side per-user access control on progress, notes, sessions, export, and deletion.</li>
+      <li>Server-side per-user access control on progress, notes, sessions, simulation events, export, and deletion.</li>
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
       <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
@@ -57,18 +58,18 @@
 
     <h2>Data Lifecycle</h2>
     <h3>Guest mode</h3>
-    <p>Guest progress, notes, and sessions stay in browser local storage until you clear site data or use the Privacy Controls panel.</p>
+    <p>Guest progress, notes, sessions, and simulation events stay in browser local storage until you clear site data or use the Privacy Controls panel.</p>
 
     <h3>Signed-in mode</h3>
-    <p>Account identity, authenticator MFA state if enabled, progress, notes, and study sessions are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
+    <p>Account identity, authenticator MFA state if enabled, progress, notes, study sessions, and simulation-risk events are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
 
     <h3>Data minimization</h3>
-    <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes.</p>
+    <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes or simulation-event labels.</p>
 
     <h2>Privacy Controls</h2>
     <p>The signed-in dashboard includes a Privacy Controls panel with two self-service actions:</p>
     <ul>
-      <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
+      <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, study sessions, and simulation events. In guest mode it dumps the corresponding local-storage keys instead.</li>
       <li><strong>Authenticator MFA</strong>: email/password users can generate a TOTP setup key, verify one code, and later disable MFA only after entering a valid code.</li>
       <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, and an MFA code when enabled, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, and reloads.</li>
     </ul>

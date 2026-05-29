@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiConfigured, authApi, c3Api } from './apiClient';
+import { buildGuestSimulationEvent, summarizeSimulationEvents } from './simulationEvents';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -216,6 +217,65 @@ export function useSessions(userId) {
   }, [userId]);
 
   return { logs, addSession };
+}
+
+export function useSimulationEvents(userId) {
+  const [summary, setSummary] = useState(() => summarizeSimulationEvents([]));
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const loadGuestEvents = useCallback(() => {
+    try {
+      const events = JSON.parse(localStorage.getItem('ccc_simulation_events') || '[]');
+      setSummary(summarizeSimulationEvents(Array.isArray(events) ? events : []));
+    } catch (parseError) {
+      console.warn('Guest simulation events could not be parsed', parseError);
+      setSummary(summarizeSimulationEvents([]));
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    setError('');
+    if (isGuest(userId)) {
+      loadGuestEvents();
+      return;
+    }
+    try {
+      setSummary(await c3Api.getRiskSummary());
+    } catch (loadError) {
+      console.warn('Risk summary load failed', loadError);
+      setError('Simulation risk summary could not be loaded.');
+      setSummary(summarizeSimulationEvents([]));
+    }
+  }, [loadGuestEvents, userId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const addEvent = useCallback(async (event) => {
+    setBusy(true);
+    setError('');
+    try {
+      if (isGuest(userId)) {
+        const current = JSON.parse(localStorage.getItem('ccc_simulation_events') || '[]');
+        const next = [buildGuestSimulationEvent(event), ...(Array.isArray(current) ? current : [])].slice(0, 100);
+        localStorage.setItem('ccc_simulation_events', JSON.stringify(next));
+        setSummary(summarizeSimulationEvents(next));
+        return;
+      }
+      const result = await c3Api.addSimulationEvent(event);
+      setSummary(result.riskSummary || summarizeSimulationEvents([]));
+    } catch (saveError) {
+      console.warn('Simulation event save failed', saveError);
+      setError(saveError.message || 'Simulation event could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  }, [userId]);
+
+  return { summary, error, busy, addEvent, reload: load };
 }
 
 export function useAccountSecurity(userId, isGuestMode) {

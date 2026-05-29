@@ -6,6 +6,10 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { loadConfig, isAllowedOrigin } from './config.js';
 import { createMailer } from './email.js';
 import {
+  normalizeSimulationEventPayload,
+  summarizeSimulationEvents,
+} from './simulation.js';
+import {
   CSRF_COOKIE,
   OAUTH_NONCE_COOKIE,
   OAUTH_RETURN_COOKIE,
@@ -486,6 +490,28 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
         session_date: String(request.body?.session_date || new Date().toISOString().slice(0, 10)),
       }),
     };
+  });
+
+  app.post('/api/simulation-events', async (request, reply) => {
+    const auth = await requireAuth(request, reply, true);
+    if (!auth) return;
+    let event;
+    try {
+      event = normalizeSimulationEventPayload(request.body || {});
+    } catch (error) {
+      app.log.warn({ statusCode: error.statusCode || 400, validationError: error.message }, 'Simulation event validation failed');
+      return reply.code(error.statusCode || 400).send({ error: error.message || 'Simulation event is invalid.' });
+    }
+    const saved = await db.addSimulationEvent(auth.user.id, event);
+    const events = await db.getSimulationEvents(auth.user.id, 50);
+    return { event: saved, riskSummary: summarizeSimulationEvents(events) };
+  });
+
+  app.get('/api/risk-summary', async (request, reply) => {
+    const auth = await requireAuth(request, reply);
+    if (!auth) return;
+    const events = await db.getSimulationEvents(auth.user.id, 50);
+    return summarizeSimulationEvents(events);
   });
 
   app.get('/api/privacy/export', async (request, reply) => {

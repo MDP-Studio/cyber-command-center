@@ -28,11 +28,11 @@
     <p>Cyber Command Center collects the minimum data needed to provide synced training progress:</p>
     <ul>
       <li><strong>Account data</strong>: email address, display name, and optional Google login identifier.</li>
-      <li><strong>Progress data</strong>: task completion status, study notes, and timer sessions.</li>
+      <li><strong>Progress data</strong>: task completion status, study notes, timer sessions, and simulation-risk event metadata.</li>
       <li><strong>Authentication data</strong>: hashed passwords for email login, hashed session tokens, CSRF token hashes, password-reset token hashes, and authenticator MFA state when enabled.</li>
       <li><strong>Security telemetry</strong>: CSP violation reports, user agent, and a hashed IP value for abuse triage.</li>
     </ul>
-    <p>If you use guest mode, no account data is collected. Guest progress, notes, and sessions stay in your browser.</p>
+    <p>If you use guest mode, no account data is collected. Guest progress, notes, sessions, and simulation events stay in your browser.</p>
 
     <h2>How We Use It</h2>
     <p>Your data is used to save and sync your training progress across devices, authenticate your account, support MFA and password reset, and investigate security issues. We do not sell, share, or use your data for advertising.</p>
@@ -50,16 +50,16 @@
 
     <h2>Data Lifecycle</h2>
     <ul>
-      <li><strong>Guest mode</strong>: progress, notes, and study sessions stay in browser local storage until you clear site data or use the Privacy Controls panel.</li>
-      <li><strong>Signed-in mode</strong>: account, progress, notes, and session data stay in PostgreSQL until you delete them through the Privacy Controls panel or request manual removal.</li>
+      <li><strong>Guest mode</strong>: progress, notes, study sessions, and simulation events stay in browser local storage until you clear site data or use the Privacy Controls panel.</li>
+      <li><strong>Signed-in mode</strong>: account, progress, notes, session data, and simulation-risk events stay in PostgreSQL until you delete them through the Privacy Controls panel or request manual removal.</li>
       <li><strong>Backups</strong>: deleted account data may remain in backups for the configured backup retention window.</li>
     </ul>
-    <p>Do not store passwords, API keys, client-private data, payment details, or live incident evidence in task notes.</p>
+    <p>Do not store passwords, API keys, client-private data, payment details, or live incident evidence in task notes or simulation-event labels.</p>
 
     <h2>Data Deletion and Export</h2>
     <p>The dashboard includes a Privacy Controls panel:</p>
     <ul>
-      <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, and study sessions. In guest mode it dumps the corresponding local-storage keys instead.</li>
+      <li><strong>Export My Data</strong>: downloads a JSON snapshot of your profile, task progress, notes, study sessions, and simulation events. In guest mode it dumps the corresponding local-storage keys instead.</li>
       <li><strong>Delete My Account</strong>: behind a "type DELETE to confirm" guard, and an MFA code when enabled, calls the backend deletion route, removes your account and user-scoped app data, clears local guest keys defensively, signs you out, and reloads.</li>
     </ul>
 

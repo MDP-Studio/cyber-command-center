@@ -32,7 +32,8 @@ Out of scope:
 - Training progress: completed task IDs and completion timestamps.
 - Task notes: free-text notes entered by the user.
 - Study sessions: timer labels, duration, dates, and created timestamps.
-- Guest data: local browser keys `ccc_progress`, `ccc_notes`, and `ccc_sessions`.
+- Simulation-risk data: audit-only training drill metadata, outcome labels, risk deltas, and timestamps.
+- Guest data: local browser keys `ccc_progress`, `ccc_notes`, `ccc_sessions`, and `ccc_simulation_events`.
 
 ### Trust Boundaries
 
@@ -46,6 +47,7 @@ Out of scope:
 
 - Optional guest mode lets users avoid account creation.
 - Email/password auth and Google OAuth are handled by the self-hosted API.
+- Simulation-risk tracking is audit-only. It records local or signed-in drill outcomes and does not send phishing messages, automate learners, or create an enterprise admin console.
 - Email/password accounts can opt in to authenticator MFA. Once enabled, password login returns a short-lived MFA challenge instead of a session until a valid 6-digit TOTP code is submitted.
 - High-risk account actions are explicitly marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.
 - Google-only accounts should use Google Account 2-Step Verification for sign-in. App-level authenticator MFA is currently enabled only for email/password accounts.
@@ -86,7 +88,7 @@ The current policy is shipped as enforcing `Content-Security-Policy` from both `
 
 The signed-in dashboard exposes Account Security and Privacy Controls sections:
 
-- **Export My Data**: downloads a JSON snapshot of the user's profile, task progress, task notes, and study sessions. In guest mode, the same button dumps the `ccc_progress`, `ccc_notes`, and `ccc_sessions` localStorage keys.
+- **Export My Data**: downloads a JSON snapshot of the user's profile, task progress, task notes, study sessions, and simulation events. In guest mode, the same button dumps the `ccc_progress`, `ccc_notes`, `ccc_sessions`, and `ccc_simulation_events` localStorage keys.
 - **Authenticator MFA**: email/password users can generate a TOTP setup key, verify one code, and later disable MFA only after entering a valid code.
 - **Delete My Account**: opens a "type DELETE to confirm" modal. If MFA is enabled, the modal also requires a current MFA code. On confirmation it calls the backend deletion route, deletes the account and user-scoped app data, clears guest localStorage keys defensively, and reloads. In guest mode the same flow clears localStorage and reloads.
 
@@ -96,7 +98,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 
 ### Guest Mode
 
-- Stored data: progress, notes, and session logs in browser `localStorage`.
+- Stored data: progress, notes, session logs, and simulation events in browser `localStorage`.
 - Storage location: the user's browser only.
 - Retention: until the user clears site data, browser storage, or the browser profile.
 - Deletion path: clear browser storage for `https://c3.mdpstudio.com.au` or use the Privacy Controls panel in guest mode.
@@ -104,7 +106,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 
 ### Signed-In Mode
 
-- Stored data: account identity, hashed password if email/password is used, Google subject if OAuth is used, authenticator MFA state if enabled, task progress, task notes, study sessions, sessions, reset tokens, MFA login challenge hashes, and CSP reports.
+- Stored data: account identity, hashed password if email/password is used, Google subject if OAuth is used, authenticator MFA state if enabled, task progress, task notes, study sessions, simulation events, sessions, reset tokens, MFA login challenge hashes, and CSP reports.
 - Storage location: self-hosted PostgreSQL in Docker on the remote PC.
 - Retention: kept until the user deletes the account or the project owner removes the account/data.
 - Deletion path: Privacy Controls panel or manual owner action.
@@ -115,7 +117,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 - Do not request or store payment details.
 - Do not request or store client-private material.
 - Do not request or store lab credentials, API keys, passwords, seed phrases, SSH keys, cloud secrets, or exchange keys.
-- Do not use task notes as an incident evidence repository.
+- Do not use task notes or simulation events as an incident evidence repository.
 
 ## Incident Reporting
 
@@ -145,6 +147,7 @@ Before shipping security-sensitive changes:
 - Run `npm run build`.
 - Run `npm audit`.
 - Run `npm run api:migrate` against the target database.
+- Verify `/api/simulation-events`, `/api/risk-summary`, export, and account deletion after applying new migrations.
 - Verify MFA setup, MFA password login, MFA disable, and MFA-protected account deletion with an email/password account.
 - Verify `/api/health` locally and through `https://c3-api.mdpstudio.com.au`.
 - Verify migrated Google and email users can access their data.

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAccountSecurity, useAuth, useProgress, useNotes, useSessions } from './hooks';
+import { useAccountSecurity, useAuth, useProgress, useNotes, useSessions, useSimulationEvents } from './hooks';
 import { apiConfigured } from './apiClient';
 import { PHASES, PLATFORMS } from './data';
+import { SIMULATION_EVENT_TYPES, SIMULATION_OUTCOMES, formatOutcome } from './simulationEvents';
 import Auth from './Auth';
 import AccountSecurityPanel from './AccountSecurityPanel';
 import PrivacyPanel from './PrivacyPanel';
@@ -400,6 +401,119 @@ function StudyResourcesPanel() {
   );
 }
 
+function SimulationRiskPanel({ simulation }) {
+  const [eventType, setEventType] = useState('phishing-email');
+  const [outcome, setOutcome] = useState('reported');
+  const [title, setTitle] = useState('');
+  const data = simulation.summary || {};
+  const summary = data.summary || {};
+  const recent = data.recentEvents || [];
+  const trend = data.trend || [];
+  const outcomes = data.outcomes || {};
+  const riskScore = summary.currentRiskScore || 0;
+  const riskColor = riskScore >= 60 ? '#ff2d6b' : riskScore >= 25 ? '#ffa500' : accent;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await simulation.addEvent({
+      eventType,
+      type: eventType,
+      outcome,
+      title: title || SIMULATION_EVENT_TYPES.find((item) => item.value === eventType)?.label,
+      details: { channel: eventType.includes('sms') ? 'sms' : eventType.includes('voice') ? 'voice' : 'lab' },
+    });
+    setTitle('');
+  };
+
+  return (
+    <section aria-labelledby="simulation-risk-title" style={{
+      marginTop: 24,
+      padding: 20,
+      background: 'rgba(56,189,248,0.035)',
+      border: '1px solid rgba(56,189,248,0.2)',
+      borderRadius: 12,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontFamily: mono, color: '#38bdf8', letterSpacing: '0.15em', marginBottom: 10 }}>
+            SIMULATION RISK
+          </div>
+          <h2 id="simulation-risk-title" style={{ margin: 0, color: '#fff', fontSize: 20, fontFamily: sans, fontWeight: 700 }}>
+            Track drill outcomes without sending campaigns.
+          </h2>
+          <p style={{ margin: '8px 0 0', color: dim, fontSize: 13, lineHeight: 1.6 }}>
+            Log tabletop or lab simulation outcomes, watch the risk trend, and keep this as visibility only. No outbound phishing sender, learner automation, or enterprise admin console is included.
+          </p>
+        </div>
+        <div style={{
+          minWidth: 160,
+          padding: 14,
+          background: 'rgba(255,255,255,0.035)',
+          border: `1px solid ${riskColor}45`,
+          borderRadius: 10,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 11, fontFamily: mono, color: dimmer, letterSpacing: '0.12em' }}>CURRENT RISK</div>
+          <div style={{ marginTop: 4, fontSize: 34, fontFamily: mono, fontWeight: 800, color: riskColor }}>{riskScore}</div>
+          <div style={{ fontSize: 11, fontFamily: mono, color: dimmer }}>{summary.totalEvents || 0} events</div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginTop: 16 }}>
+        <select value={eventType} onChange={(event) => setEventType(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
+          {SIMULATION_EVENT_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+        <select value={outcome} onChange={(event) => setOutcome(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
+          {SIMULATION_OUTCOMES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+        <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Optional drill label" style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: sans, fontSize: 13 }} />
+        <button disabled={simulation.busy} style={{ padding: '10px 14px', background: '#38bdf815', border: '1px solid rgba(56,189,248,0.45)', borderRadius: 8, color: '#38bdf8', fontSize: 12, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+          {simulation.busy ? 'LOGGING...' : 'LOG EVENT'}
+        </button>
+      </form>
+      {simulation.error && <div role="alert" style={{ marginTop: 10, color: '#ff2d6b', fontSize: 12, fontFamily: mono }}>{simulation.error}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 16 }}>
+        <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
+          <div style={{ color: dimmer, fontSize: 11, fontFamily: mono, letterSpacing: '0.1em', marginBottom: 8 }}>OUTCOMES</div>
+          {Object.keys(outcomes).length === 0 ? (
+            <div style={{ color: dimmer, fontSize: 13 }}>No simulation outcomes yet.</div>
+          ) : Object.entries(outcomes).map(([key, value]) => (
+            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', color: dim, fontSize: 12, fontFamily: mono, marginTop: 5 }}>
+              <span>{formatOutcome(key)}</span><strong style={{ color: '#fff' }}>{value}</strong>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
+          <div style={{ color: dimmer, fontSize: 11, fontFamily: mono, letterSpacing: '0.1em', marginBottom: 8 }}>TREND</div>
+          {trend.length === 0 ? (
+            <div style={{ color: dimmer, fontSize: 13 }}>Trend appears after the first event.</div>
+          ) : trend.slice(-5).map((point) => (
+            <div key={point.date} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              <span style={{ width: 74, color: dimmer, fontSize: 11, fontFamily: mono }}>{point.date}</span>
+              <div style={{ flex: 1, height: 6, background: cardBorder, borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ width: `${point.score}%`, height: '100%', background: riskColor }} />
+              </div>
+              <span style={{ width: 28, color: dim, fontSize: 11, fontFamily: mono, textAlign: 'right' }}>{point.score}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
+          <div style={{ color: dimmer, fontSize: 11, fontFamily: mono, letterSpacing: '0.1em', marginBottom: 8 }}>RECENT EVENTS</div>
+          {recent.length === 0 ? (
+            <div style={{ color: dimmer, fontSize: 13 }}>No recent drills logged.</div>
+          ) : recent.slice(0, 4).map((event) => (
+            <div key={event.id} style={{ marginTop: 8, color: dim, fontSize: 12, lineHeight: 1.4 }}>
+              <strong style={{ display: 'block', color: '#fff', fontFamily: sans }}>{event.title}</strong>
+              <span style={{ fontFamily: mono }}>{formatOutcome(event.outcome)} | risk {event.riskDelta > 0 ? '+' : ''}{event.riskDelta}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeedbackPanel() {
   const feedbackLink = "mailto:meidie@mdpstudio.com.au?subject=Feedback:%20Cyber%20Command%20Center&body=Project:%20Cyber%20Command%20Center%0ALink:%20https%3A%2F%2Fc3.mdpstudio.com.au%0AWhat%20happened:%0AWhat%20you%20expected:%0A%0APlease%20do%20not%20include%20passwords%2C%20API%20keys%2C%20private%20account%20data%2C%20client%20data%2C%20or%20payment%20details.";
 
@@ -444,6 +558,7 @@ function Dashboard({ user, signOut, isGuest }) {
   const { progress, loaded, toggleTask, error: progressError } = useProgress(user.id);
   const { notes, updateNote } = useNotes(user.id);
   const { logs, addSession } = useSessions(user.id);
+  const simulation = useSimulationEvents(user.id);
   const accountSecurity = useAccountSecurity(user.id, isGuest);
   const [openPhases, setOpenPhases] = useState({});
   const [tab, setTab] = useState("phases");
@@ -573,12 +688,19 @@ function Dashboard({ user, signOut, isGuest }) {
         {tab === "timer" && (
           <>
             <StudyTimer onSessionEnd={handleSessionEnd} />
+            <SimulationRiskPanel simulation={simulation} />
             <DailyLog logs={logs} isOpen={logOpen} onToggle={() => setLogOpen(!logOpen)} />
           </>
         )}
-        {tab === "log" && <DailyLog logs={logs} isOpen={true} onToggle={() => {}} />}
+        {tab === "log" && (
+          <>
+            <SimulationRiskPanel simulation={simulation} />
+            <DailyLog logs={logs} isOpen={true} onToggle={() => {}} />
+          </>
+        )}
         {tab === "phases" && (
           <>
+            <SimulationRiskPanel simulation={simulation} />
             {PHASES.map((phase) => (
               <PhaseCard key={phase.id} phase={phase} progress={progress} notes={notes}
                 onToggleTask={toggleTask} onNoteChange={handleNoteChange}

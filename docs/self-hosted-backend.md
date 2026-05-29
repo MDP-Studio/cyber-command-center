@@ -107,9 +107,10 @@ Keep Supabase as rollback/archive for 14 days after cutover. Remove Supabase env
 - Email/password login works for the migrated email user after password reset.
 - Optional authenticator MFA can be enabled for an email/password account, blocks password login until a valid code is submitted, and requires a code for account deletion.
 - Google login works for the 3 migrated Google users.
-- Dashboard loads progress, notes, and study sessions.
+- Dashboard loads progress, notes, study sessions, and simulation-risk events.
 - Export downloads all user-scoped data.
-- Delete removes the account and returns to signed-out state.
+- Delete removes the account, cascades simulation-risk events, and returns to signed-out state.
+- Simulation-risk tracking remains audit-only: no outbound phishing sender, learner automation, or enterprise admin console.
 - Browser devtools show no `*.supabase.co` requests.
 - CSP reports post to `/api/csp-report`.
 

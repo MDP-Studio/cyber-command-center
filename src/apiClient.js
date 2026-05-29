@@ -108,6 +108,15 @@ export const c3Api = {
       },
     });
   },
+  async getRiskSummary() {
+    return request('/api/risk-summary');
+  },
+  async addSimulationEvent(event) {
+    return request('/api/simulation-events', {
+      method: 'POST',
+      body: event,
+    });
+  },
   async exportAccount() {
     return request('/api/privacy/export');
   },
