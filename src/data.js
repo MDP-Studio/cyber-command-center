@@ -191,3 +191,51 @@ export const PLATFORMS = [
   { name: "VulnHub", url: "https://www.vulnhub.com" },
   { name: "MITRE ATT&CK", url: "https://attack.mitre.org" },
 ];
+
+export const ASSESSMENT_DRILLS = [
+  {
+    id: "triage-phishing-t1566",
+    title: "Phishing alert triage",
+    phase: "SOC",
+    attackTechnique: "T1566",
+    reference: "NIST SP 800-61r3",
+    maxScore: 5,
+    checklist: [
+      "Capture sender, recipient, subject, and received time",
+      "Separate indicators from user-visible lure text",
+      "Map the lure to ATT&CK and decide escalation",
+      "Write one containment recommendation without deleting evidence",
+      "Record what remains unknown",
+    ],
+  },
+  {
+    id: "powershell-t1059",
+    title: "PowerShell execution review",
+    phase: "SOC",
+    attackTechnique: "T1059.001",
+    reference: "MITRE ATT&CK",
+    maxScore: 5,
+    checklist: [
+      "Identify encoded, download, hidden-window, or policy-bypass behavior",
+      "Preserve command line and parent-process context",
+      "Classify benign admin, suspicious, or malicious-like activity",
+      "Name the evidence source used for confidence",
+      "Write a short responder note",
+    ],
+  },
+  {
+    id: "incident-handoff-csf",
+    title: "Incident handoff summary",
+    phase: "IR",
+    attackTechnique: "CSF-RS",
+    reference: "NIST CSF 2.0",
+    maxScore: 5,
+    checklist: [
+      "State the impact in business language",
+      "List evidence already preserved",
+      "List actions not yet taken",
+      "Assign owner and next deadline",
+      "Mark the case ready for follow-up review",
+    ],
+  },
+];

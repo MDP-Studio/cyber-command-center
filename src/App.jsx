@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccountSecurity, useAuth, useProgress, useNotes, useSessions, useSimulationEvents } from './hooks';
 import { apiConfigured } from './apiClient';
-import { PHASES, PLATFORMS } from './data';
+import { ASSESSMENT_DRILLS, PHASES, PLATFORMS } from './data';
 import { SIMULATION_EVENT_TYPES, SIMULATION_OUTCOMES, formatOutcome } from './simulationEvents';
 import Auth from './Auth';
 import AccountSecurityPanel from './AccountSecurityPanel';
@@ -514,6 +514,74 @@ function SimulationRiskPanel({ simulation }) {
   );
 }
 
+function AssessmentDrillsPanel({ simulation }) {
+  const logDrill = async (drill, outcome, score) => {
+    await simulation.addEvent({
+      eventType: 'incident-response',
+      type: 'incident-response',
+      outcome,
+      title: drill.title,
+      details: {
+        scenario: drill.title,
+        drillId: drill.id,
+        attackTechnique: drill.attackTechnique,
+        rubric: `${score}/${drill.maxScore}`,
+        score: String(score),
+        maxScore: String(drill.maxScore),
+        reference: drill.reference,
+      },
+    });
+  };
+
+  return (
+    <section aria-labelledby="assessment-drills-title" style={{
+      marginTop: 24,
+      padding: 20,
+      background: 'rgba(250,204,21,0.035)',
+      border: '1px solid rgba(250,204,21,0.2)',
+      borderRadius: 12,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontFamily: mono, color: '#facc15', letterSpacing: '0.15em', marginBottom: 10 }}>
+            ASSESSMENT DRILLS
+          </div>
+          <h2 id="assessment-drills-title" style={{ margin: 0, color: '#fff', fontSize: 20, fontFamily: sans, fontWeight: 700 }}>
+            Score hands-on work against a small rubric.
+          </h2>
+          <p style={{ margin: '8px 0 0', color: dim, fontSize: 13, lineHeight: 1.6 }}>
+            Log only the assessment result and mapping. Keep raw evidence, lab flags, secrets, and client data out of task notes and drill metadata.
+          </p>
+        </div>
+        <div style={{ minWidth: 150, padding: 14, background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(250,204,21,0.35)', borderRadius: 10, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontFamily: mono, color: dimmer, letterSpacing: '0.12em' }}>DRILLS</div>
+          <div style={{ marginTop: 4, fontSize: 34, fontFamily: mono, fontWeight: 800, color: '#facc15' }}>{ASSESSMENT_DRILLS.length}</div>
+          <div style={{ fontSize: 11, fontFamily: mono, color: dimmer }}>mapped rubrics</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12, marginTop: 16 }}>
+        {ASSESSMENT_DRILLS.map((drill) => (
+          <article key={drill.id} style={{ padding: 14, background: 'rgba(255,255,255,0.035)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ color: '#facc15', fontSize: 11, fontFamily: mono, letterSpacing: '0.1em' }}>{drill.phase}</span>
+              <span style={{ color: dimmer, fontSize: 11, fontFamily: mono }}>{drill.attackTechnique}</span>
+            </div>
+            <h3 style={{ margin: 0, color: '#fff', fontSize: 15, fontFamily: sans, lineHeight: 1.3 }}>{drill.title}</h3>
+            <ul style={{ margin: '10px 0 12px', paddingLeft: 18, color: dim, fontSize: 12, lineHeight: 1.5 }}>
+              {drill.checklist.slice(0, 3).map((item) => <li key={item}>{item}</li>)}
+            </ul>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
+              <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'completed', drill.maxScore)} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(0,255,200,0.35)', background: 'rgba(0,255,200,0.08)', color: accent, fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>PASS</button>
+              <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'reviewed', Math.max(1, drill.maxScore - 2))} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(56,189,248,0.35)', background: 'rgba(56,189,248,0.08)', color: '#38bdf8', fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>REVIEW</button>
+              <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'failed', 1)} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(255,45,107,0.35)', background: 'rgba(255,45,107,0.08)', color: '#ff2d6b', fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>FAIL</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FeedbackPanel() {
   const feedbackLink = "mailto:meidie@mdpstudio.com.au?subject=Feedback:%20Cyber%20Command%20Center&body=Project:%20Cyber%20Command%20Center%0ALink:%20https%3A%2F%2Fc3.mdpstudio.com.au%0AWhat%20happened:%0AWhat%20you%20expected:%0A%0APlease%20do%20not%20include%20passwords%2C%20API%20keys%2C%20private%20account%20data%2C%20client%20data%2C%20or%20payment%20details.";
 
@@ -689,18 +757,21 @@ function Dashboard({ user, signOut, isGuest }) {
           <>
             <StudyTimer onSessionEnd={handleSessionEnd} />
             <SimulationRiskPanel simulation={simulation} />
+            <AssessmentDrillsPanel simulation={simulation} />
             <DailyLog logs={logs} isOpen={logOpen} onToggle={() => setLogOpen(!logOpen)} />
           </>
         )}
         {tab === "log" && (
           <>
             <SimulationRiskPanel simulation={simulation} />
+            <AssessmentDrillsPanel simulation={simulation} />
             <DailyLog logs={logs} isOpen={true} onToggle={() => {}} />
           </>
         )}
         {tab === "phases" && (
           <>
             <SimulationRiskPanel simulation={simulation} />
+            <AssessmentDrillsPanel simulation={simulation} />
             {PHASES.map((phase) => (
               <PhaseCard key={phase.id} phase={phase} progress={progress} notes={notes}
                 onToggleTask={toggleTask} onNoteChange={handleNoteChange}

@@ -32,7 +32,7 @@ Out of scope:
 - Training progress: completed task IDs and completion timestamps.
 - Task notes: free-text notes entered by the user.
 - Study sessions: timer labels, duration, dates, and created timestamps.
-- Simulation-risk data: audit-only training drill metadata, outcome labels, risk deltas, and timestamps.
+- Simulation-risk data: audit-only training drill metadata, assessment drill IDs, ATT&CK/NIST rubric labels, outcome labels, risk deltas, and timestamps.
 - Guest data: local browser keys `ccc_progress`, `ccc_notes`, `ccc_sessions`, and `ccc_simulation_events`.
 
 ### Trust Boundaries
@@ -48,6 +48,7 @@ Out of scope:
 - Optional guest mode lets users avoid account creation.
 - Email/password auth and Google OAuth are handled by the self-hosted API.
 - Simulation-risk tracking is audit-only. It records local or signed-in drill outcomes and does not send phishing messages, automate learners, or create an enterprise admin console.
+- Assessment drills record only compact rubric metadata such as drill ID, mapped technique, score label, and reference. They are not an evidence repository.
 - Email/password accounts can opt in to authenticator MFA. Once enabled, password login returns a short-lived MFA challenge instead of a session until a valid 6-digit TOTP code is submitted.
 - High-risk account actions are explicitly marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.
 - Google-only accounts should use Google Account 2-Step Verification for sign-in. App-level authenticator MFA is currently enabled only for email/password accounts.
@@ -117,7 +118,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 - Do not request or store payment details.
 - Do not request or store client-private material.
 - Do not request or store lab credentials, API keys, passwords, seed phrases, SSH keys, cloud secrets, or exchange keys.
-- Do not use task notes or simulation events as an incident evidence repository.
+- Do not use task notes, simulation events, or assessment-drill metadata as an incident evidence repository.
 
 ## Incident Reporting
 

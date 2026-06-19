@@ -28,7 +28,18 @@ const DEFAULT_RISK_DELTA = {
   credential_submitted: 35,
 };
 
-const DETAIL_KEYS = new Set(['channel', 'scenario', 'lesson', 'taskId', 'reference']);
+const DETAIL_KEYS = new Set([
+  'channel',
+  'scenario',
+  'lesson',
+  'taskId',
+  'reference',
+  'drillId',
+  'attackTechnique',
+  'rubric',
+  'score',
+  'maxScore',
+]);
 const BLOCKED_DETAIL_KEYS = /body|password|secret|token|apikey|api_key|cookie|credential/i;
 
 function clamp(value, min, max) {

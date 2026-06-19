@@ -536,12 +536,35 @@ test('simulation events require CSRF and feed risk summary plus export', async (
   assert.equal(body(accepted).riskSummary.summary.totalEvents, 1);
   assert.equal(body(accepted).riskSummary.summary.currentRiskScore, 18);
 
+  const drill = await app.inject({
+    method: 'POST',
+    url: '/api/simulation-events',
+    headers: { origin: ORIGIN, cookie: cookies, 'x-csrf-token': csrfToken },
+    payload: {
+      type: 'incident-response',
+      outcome: 'completed',
+      title: 'Phishing alert triage',
+      details: {
+        drillId: 'triage-phishing-t1566',
+        attackTechnique: 'T1566',
+        rubric: '5/5',
+        score: '5',
+        maxScore: '5',
+        reference: 'NIST SP 800-61r3',
+      },
+    },
+  });
+  assert.equal(drill.statusCode, 200);
+  assert.equal(body(drill).event.details.drillId, 'triage-phishing-t1566');
+  assert.equal(body(drill).event.details.attackTechnique, 'T1566');
+
   const summary = await app.inject({ method: 'GET', url: '/api/risk-summary', headers: { cookie: cookies } });
   assert.equal(summary.statusCode, 200);
-  assert.equal(body(summary).recentEvents[0].title, 'Link click drill');
+  assert.ok(body(summary).recentEvents.some((event) => event.title === 'Link click drill'));
+  assert.ok(body(summary).recentEvents.some((event) => event.details?.drillId === 'triage-phishing-t1566'));
 
   const exported = await app.inject({ method: 'GET', url: '/api/privacy/export', headers: { cookie: cookies } });
-  assert.equal(body(exported).data.simulation_events.length, 1);
+  assert.equal(body(exported).data.simulation_events.length, 2);
   await app.close();
 });
 
