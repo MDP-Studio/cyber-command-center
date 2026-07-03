@@ -39,6 +39,9 @@ const DETAIL_KEYS = new Set([
   'rubric',
   'score',
   'maxScore',
+  'evidenceFields',
+  'expectedArtifacts',
+  'scoringFocus',
 ]);
 const BLOCKED_DETAIL_KEYS = /body|password|secret|token|apikey|api_key|cookie|credential/i;
 

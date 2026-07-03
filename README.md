@@ -82,7 +82,7 @@ docker run -p 3000:3000 cyber-command
 - **Study timer** - start, pause, and stop with labeled session logging.
 - **Training log** - daily breakdown, streak counter, and cumulative hours.
 - **Simulation-risk tracking** - log phishing, social-engineering, credential-hygiene, and incident-response drill outcomes with a compact risk trend.
-- **Assessment drills** - score a small set of ATT&CK/NIST-mapped hands-on exercises and record pass, review, or fail outcomes as compact metadata.
+- **Assessment drills** - score a small set of ATT&CK/NIST-mapped hands-on exercises, including phishing-alert investigation, and record pass, review, or fail outcomes as compact metadata.
 - **Per-task notes** - keep commands, flags, findings, and reminders inline.
 - **Server-side access control** - each API request is scoped to the signed-in user.
 - **Account security and privacy controls** - enable MFA, export data, or delete the account from the dashboard.

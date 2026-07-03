@@ -545,23 +545,27 @@ test('simulation events require CSRF and feed risk summary plus export', async (
       outcome: 'completed',
       title: 'Phishing alert triage',
       details: {
-        drillId: 'triage-phishing-t1566',
-        attackTechnique: 'T1566',
-        rubric: '5/5',
-        score: '5',
-        maxScore: '5',
-        reference: 'NIST SP 800-61r3',
+        drillId: 'investigate-phishing-alert-t1566',
+        attackTechnique: 'T1566.002',
+        rubric: '7/7',
+        score: '7',
+        maxScore: '7',
+        reference: 'MITRE ATT&CK T1566.002 + NIST SP 800-61r3',
+        evidenceFields: 'sender, reply-to, url domain, attachment hash',
+        expectedArtifacts: 'triage summary, indicator list, containment note',
+        scoringFocus: 'classification, evidence handling, campaign judgement',
       },
     },
   });
   assert.equal(drill.statusCode, 200);
-  assert.equal(body(drill).event.details.drillId, 'triage-phishing-t1566');
-  assert.equal(body(drill).event.details.attackTechnique, 'T1566');
+  assert.equal(body(drill).event.details.drillId, 'investigate-phishing-alert-t1566');
+  assert.equal(body(drill).event.details.attackTechnique, 'T1566.002');
+  assert.equal(body(drill).event.details.expectedArtifacts, 'triage summary, indicator list, containment note');
 
   const summary = await app.inject({ method: 'GET', url: '/api/risk-summary', headers: { cookie: cookies } });
   assert.equal(summary.statusCode, 200);
   assert.ok(body(summary).recentEvents.some((event) => event.title === 'Link click drill'));
-  assert.ok(body(summary).recentEvents.some((event) => event.details?.drillId === 'triage-phishing-t1566'));
+  assert.ok(body(summary).recentEvents.some((event) => event.details?.drillId === 'investigate-phishing-alert-t1566'));
 
   const exported = await app.inject({ method: 'GET', url: '/api/privacy/export', headers: { cookie: cookies } });
   assert.equal(body(exported).data.simulation_events.length, 2);

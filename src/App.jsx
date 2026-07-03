@@ -529,6 +529,9 @@ function AssessmentDrillsPanel({ simulation }) {
         score: String(score),
         maxScore: String(drill.maxScore),
         reference: drill.reference,
+        evidenceFields: drill.evidenceFields?.join(', '),
+        expectedArtifacts: drill.expectedArtifacts?.join(', '),
+        scoringFocus: drill.scoringFocus,
       },
     });
   };
@@ -570,6 +573,16 @@ function AssessmentDrillsPanel({ simulation }) {
             <ul style={{ margin: '10px 0 12px', paddingLeft: 18, color: dim, fontSize: 12, lineHeight: 1.5 }}>
               {drill.checklist.slice(0, 3).map((item) => <li key={item}>{item}</li>)}
             </ul>
+            {drill.evidenceFields && (
+              <div style={{ marginBottom: 10, color: dimmer, fontSize: 11, fontFamily: mono, lineHeight: 1.45 }}>
+                Evidence: {drill.evidenceFields.slice(0, 4).join(', ')}
+              </div>
+            )}
+            {drill.expectedArtifacts && (
+              <div style={{ marginBottom: 12, color: dimmer, fontSize: 11, fontFamily: mono, lineHeight: 1.45 }}>
+                Artifacts: {drill.expectedArtifacts.slice(0, 4).join(', ')}
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
               <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'completed', drill.maxScore)} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(0,255,200,0.35)', background: 'rgba(0,255,200,0.08)', color: accent, fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>PASS</button>
               <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'reviewed', Math.max(1, drill.maxScore - 2))} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(56,189,248,0.35)', background: 'rgba(56,189,248,0.08)', color: '#38bdf8', fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>REVIEW</button>

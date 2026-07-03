@@ -194,6 +194,40 @@ export const PLATFORMS = [
 
 export const ASSESSMENT_DRILLS = [
   {
+    id: "investigate-phishing-alert-t1566",
+    title: "Investigate phishing alert",
+    phase: "SOC",
+    attackTechnique: "T1566.002",
+    reference: "MITRE ATT&CK T1566.002 + NIST SP 800-61r3",
+    maxScore: 7,
+    checklist: [
+      "Classify the lure and delivery path without opening live links",
+      "Extract sender, reply-to, URL domain, attachment hash, and mailbox rule evidence",
+      "Decide if the alert is isolated, related to a campaign, or needs escalation",
+      "Write containment actions for mailbox, identity, and endpoint owners",
+      "Record confidence, unknowns, and a safe user-facing advisory",
+      "Map the finding to ATT&CK and the incident-response phase",
+      "Keep raw message bodies, secrets, and client identifiers outside this tracker",
+    ],
+    evidenceFields: [
+      "sender",
+      "reply-to",
+      "url domain",
+      "attachment hash",
+      "mailbox rule",
+      "recipient count",
+      "identity signal",
+    ],
+    expectedArtifacts: [
+      "triage summary",
+      "indicator list",
+      "containment note",
+      "user advisory",
+      "unknowns list",
+    ],
+    scoringFocus: "classification, evidence handling, campaign judgement, containment quality",
+  },
+  {
     id: "triage-phishing-t1566",
     title: "Phishing alert triage",
     phase: "SOC",

@@ -118,7 +118,7 @@ Deleted records may remain in provider-managed backups for the normal backup ret
 - Do not request or store payment details.
 - Do not request or store client-private material.
 - Do not request or store lab credentials, API keys, passwords, seed phrases, SSH keys, cloud secrets, or exchange keys.
-- Do not use task notes, simulation events, or assessment-drill metadata as an incident evidence repository.
+- Do not use task notes, simulation events, or assessment-drill metadata as an incident evidence repository. Assessment-drill evidence and artifact fields are category names only, not storage for raw alerts, message bodies, client identifiers, credentials, or lab flags.
 
 ## Incident Reporting
 
