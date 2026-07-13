@@ -60,7 +60,7 @@ If `VITE_C3_API_URL` is empty, the app runs in guest-only mode. Signed-in sync u
 
 **Frontend:** the production frontend currently runs as a Coolify static nginx container; the previous Netlify site is a rollback path. Build with `VITE_C3_API_URL=https://c3-api.mdpstudio.com.au` only after the remote API passes health, migration, backup, and smoke tests.
 
-The current public frontend is served by the emergency Coolify static container described in the shared MDP deployment runbook. [`deploy/nginx.coolify.conf`](deploy/nginx.coolify.conf) is the canonical nginx configuration for that path and mirrors the repository's CSP and security headers. Do not replace it with a generic static-site config.
+The current public frontend is served by the emergency Coolify static container described in the shared MDP deployment runbook. [`deploy/nginx.coolify.conf`](deploy/nginx.coolify.conf) is the canonical nginx configuration for that path and mirrors the repository's CSP and security headers. Its HTML cache policy includes `no-transform` so an edge proxy cannot inject scripts outside the reviewed CSP. Do not replace it with a generic static-site config.
 
 **Search readiness:** `public/robots.txt` and `public/sitemap.xml` publish the canonical `https://c3.mdpstudio.com.au` URLs for the dashboard, privacy, terms, and security pages.
 Public growth pages live at `/roadmap` and `/soc-checklist` so the project can rank for student and junior analyst learning searches, not only branded app queries.
@@ -121,6 +121,7 @@ Production headers are defined for Netlify in `netlify.toml`, for the standard D
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 - `Content-Security-Policy` limited to the app, Google Fonts, and `https://c3-api.mdpstudio.com.au`
+- `Cache-Control: public, no-cache, no-transform` for HTML to prevent edge script injection
 
 Security reports: email `meidie@mdpstudio.com.au` with the subject `Security report: Cyber Command Center`. See `SECURITY.md` for scope, data lifecycle, known gaps, and incident reporting details.
 

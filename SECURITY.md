@@ -63,7 +63,7 @@ Out of scope:
 - External curriculum links use `target="_blank"` with `rel="noopener noreferrer"`.
 - Netlify security headers set frame denial, MIME sniffing protection, strict referrer policy, and a restrictive permissions policy.
 - A `Content-Security-Policy` header is shipped from `netlify.toml` and `nginx.conf`, restricted to the frontend, Google Fonts, and `https://c3-api.mdpstudio.com.au`.
-- The Coolify static deployment uses `deploy/nginx.coolify.conf`; live header checks must confirm it has not drifted to a generic nginx configuration.
+- The Coolify static deployment uses `deploy/nginx.coolify.conf`; live header checks must confirm it has not drifted to a generic nginx configuration and that HTML retains `no-transform` to prevent edge-injected scripts outside the reviewed CSP.
 
 ### Known Gaps
 
