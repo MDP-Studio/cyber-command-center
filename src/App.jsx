@@ -515,6 +515,8 @@ function SimulationRiskPanel({ simulation }) {
 }
 
 function AssessmentDrillsPanel({ simulation }) {
+  const assessmentReport = simulation.summary?.assessments || {};
+  const drillReports = new Map((assessmentReport.byDrill || []).map((report) => [report.drillId, report]));
   const logDrill = async (drill, outcome, score) => {
     await simulation.addEvent({
       eventType: 'incident-response',
@@ -532,6 +534,7 @@ function AssessmentDrillsPanel({ simulation }) {
         evidenceFields: drill.evidenceFields?.join(', '),
         expectedArtifacts: drill.expectedArtifacts?.join(', '),
         scoringFocus: drill.scoringFocus,
+        rubricDimensions: drill.rubricDimensions?.join(', '),
       },
     });
   };
@@ -562,8 +565,23 @@ function AssessmentDrillsPanel({ simulation }) {
           <div style={{ fontSize: 11, fontFamily: mono, color: dimmer }}>mapped rubrics</div>
         </div>
       </div>
+      <div aria-label="Assessment outcome report" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginTop: 16 }}>
+        {[
+          ['ATTEMPTS', assessmentReport.totalAttempts || 0],
+          ['DRILLS ASSESSED', assessmentReport.assessedDrills || 0],
+          ['AVERAGE', `${assessmentReport.averagePercent || 0}%`],
+          ['IMPROVING', assessmentReport.improvingDrills || 0],
+        ].map(([label, value]) => (
+          <div key={label} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
+            <div style={{ color: dimmer, fontSize: 10, fontFamily: mono, letterSpacing: '0.1em' }}>{label}</div>
+            <strong style={{ display: 'block', marginTop: 5, color: '#fff', fontSize: 20, fontFamily: mono }}>{value}</strong>
+          </div>
+        ))}
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12, marginTop: 16 }}>
-        {ASSESSMENT_DRILLS.map((drill) => (
+        {ASSESSMENT_DRILLS.map((drill) => {
+          const report = drillReports.get(drill.id);
+          return (
           <article key={drill.id} style={{ padding: 14, background: 'rgba(255,255,255,0.035)', border: `1px solid ${cardBorder}`, borderRadius: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 8 }}>
               <span style={{ color: '#facc15', fontSize: 11, fontFamily: mono, letterSpacing: '0.1em' }}>{drill.phase}</span>
@@ -583,13 +601,25 @@ function AssessmentDrillsPanel({ simulation }) {
                 Artifacts: {drill.expectedArtifacts.slice(0, 4).join(', ')}
               </div>
             )}
+            <div style={{ marginBottom: 12, color: dimmer, fontSize: 11, fontFamily: mono, lineHeight: 1.45 }}>
+              Rubric: {drill.rubricDimensions.join(', ')}
+            </div>
+            {report ? (
+              <div aria-label={`${drill.title} attempt history`} style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: 'rgba(250,204,21,0.05)', color: dim, fontSize: 11, fontFamily: mono, lineHeight: 1.55 }}>
+                <strong style={{ color: '#fff' }}>{report.latestPercent}% {report.evidenceQuality.replace('_', ' ')}</strong>
+                <span style={{ display: 'block' }}>{report.attempts} attempt{report.attempts === 1 ? '' : 's'} | first {report.firstPercent}% | change {report.change >= 0 ? '+' : ''}{report.change}</span>
+                <span style={{ display: 'block' }}>Recent: {report.history.map((attempt) => `${attempt.percent}%`).join(' → ')}</span>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 12, color: dimmer, fontSize: 11, fontFamily: mono }}>No scored attempts yet.</div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
               <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'completed', drill.maxScore)} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(0,255,200,0.35)', background: 'rgba(0,255,200,0.08)', color: accent, fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>PASS</button>
               <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'reviewed', Math.max(1, drill.maxScore - 2))} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(56,189,248,0.35)', background: 'rgba(56,189,248,0.08)', color: '#38bdf8', fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>REVIEW</button>
               <button type="button" disabled={simulation.busy} onClick={() => logDrill(drill, 'failed', 1)} style={{ padding: '8px 4px', borderRadius: 6, border: '1px solid rgba(255,45,107,0.35)', background: 'rgba(255,45,107,0.08)', color: '#ff2d6b', fontSize: 11, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer' }}>FAIL</button>
             </div>
           </article>
-        ))}
+        );})}
       </div>
     </section>
   );

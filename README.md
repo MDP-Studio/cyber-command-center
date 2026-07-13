@@ -18,7 +18,7 @@ Google OAuth, email/password, or skip straight to guest mode. Guest progress sav
 
 Track 49 tasks across 6 phases. Stats update in real time: progress percentage, tasks completed, planned hours, and logged study time.
 The dashboard also includes a lightweight simulation-risk panel for logging tabletop or lab drill outcomes without sending phishing campaigns.
-It now includes a small assessment-drill panel with ATT&CK/NIST-mapped rubrics so hands-on work can be scored without storing raw lab evidence.
+It now includes an assessment-drill panel with ATT&CK/NIST-mapped rubrics, per-drill attempt history, evidence-quality bands, and first-to-latest outcome deltas so hands-on improvement can be measured without storing raw lab evidence.
 
 ![Dashboard](screenshots/02-dashboard.png)
 
@@ -82,7 +82,7 @@ docker run -p 3000:3000 cyber-command
 - **Study timer** - start, pause, and stop with labeled session logging.
 - **Training log** - daily breakdown, streak counter, and cumulative hours.
 - **Simulation-risk tracking** - log phishing, social-engineering, credential-hygiene, and incident-response drill outcomes with a compact risk trend.
-- **Assessment drills** - score a small set of ATT&CK/NIST-mapped hands-on exercises, including phishing-alert investigation, and record pass, review, or fail outcomes as compact metadata.
+- **Assessment drills** - score ATT&CK/NIST-mapped hands-on exercises, including phishing-alert investigation, and review attempts, rubric dimensions, evidence-quality bands, and first-to-latest improvement as compact metadata.
 - **Per-task notes** - keep commands, flags, findings, and reminders inline.
 - **Server-side access control** - each API request is scoped to the signed-in user.
 - **Account security and privacy controls** - enable MFA, export data, or delete the account from the dashboard.
@@ -110,7 +110,7 @@ If VITE_C3_API_URL is empty:
 
 ## Security
 
-Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped by the backend API, email/password accounts can opt in to authenticator MFA, and task notes, simulation-event labels, or assessment-drill metadata should not be used for secrets, client data, payment details, or incident evidence.
+Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped by the backend API, email/password accounts can opt in to authenticator MFA, and task notes, simulation-event labels, or assessment-drill metadata should not be used for secrets, client data, payment details, or incident evidence. Assessment outcome reporting is descriptive training evidence, not a certification or hiring prediction.
 
 Production headers via `netlify.toml`:
 

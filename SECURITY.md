@@ -1,6 +1,6 @@
 # Security Policy
 
-Last updated: 2026-05-22
+Last updated: 2026-07-13
 
 Cyber Command Center is a free cybersecurity training tracker. This policy documents the current security model, data lifecycle, incident reporting process, and known limits so the product's security posture is explicit instead of implied.
 
@@ -48,7 +48,7 @@ Out of scope:
 - Optional guest mode lets users avoid account creation.
 - Email/password auth and Google OAuth are handled by the self-hosted API.
 - Simulation-risk tracking is audit-only. It records local or signed-in drill outcomes and does not send phishing messages, automate learners, or create an enterprise admin console.
-- Assessment drills record only compact rubric metadata such as drill ID, mapped technique, score label, and reference. They are not an evidence repository.
+- Assessment drills record only compact rubric metadata such as drill ID, mapped technique, score, maximum score, rubric dimensions, and reference. First-to-latest deltas and evidence-quality bands are derived from those scores. They are not an evidence repository, certification, or prediction of workplace performance.
 - Email/password accounts can opt in to authenticator MFA. Once enabled, password login returns a short-lived MFA challenge instead of a session until a valid 6-digit TOTP code is submitted.
 - High-risk account actions are explicitly marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.
 - Google-only accounts should use Google Account 2-Step Verification for sign-in. App-level authenticator MFA is currently enabled only for email/password accounts.

@@ -37,3 +37,15 @@
 - Keep Supabase as rollback/archive for 14 days after cutover.
 - Do not expose the Postgres port publicly.
 - Do not print `.env.production`, Supabase service-role keys, Google secrets, SMTP secrets, or Cloudflare tokens.
+
+## Assessment Outcome Reporting (2026-07-13)
+
+- [x] Derive per-drill attempt history from compact simulation-event metadata.
+- [x] Show first, latest, best, delta, and evidence-quality bands without storing raw evidence.
+- [x] Add rubric dimensions to every assessment drill.
+- [x] Cover improvement and malformed-score behavior with automated tests.
+- [x] Update product, security, roadmap, and backend documentation.
+
+### Review
+
+The dashboard now turns repeated drill scores into a small longitudinal learning report. It remains descriptive practice evidence, not certification, learner surveillance, or a prediction of job performance.

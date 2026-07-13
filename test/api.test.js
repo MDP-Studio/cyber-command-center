@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createApp } from '../api/app.js';
 import { generateTotpCode, hashToken } from '../api/security.js';
+import { summarizeAssessmentAttempts } from '../api/simulation.js';
 
 const ORIGIN = 'https://c3.mdpstudio.com.au';
 
@@ -570,6 +571,28 @@ test('simulation events require CSRF and feed risk summary plus export', async (
   const exported = await app.inject({ method: 'GET', url: '/api/privacy/export', headers: { cookie: cookies } });
   assert.equal(body(exported).data.simulation_events.length, 2);
   await app.close();
+});
+
+test('assessment summary reports longitudinal improvement and ignores malformed scores', () => {
+  const base = {
+    event_type: 'incident-response',
+    outcome: 'reviewed',
+    title: 'Phishing alert triage',
+    risk_delta: -4,
+    created_at: '2026-07-01T00:00:00.000Z',
+  };
+  const report = summarizeAssessmentAttempts([
+    { ...base, id: 'first', occurred_at: '2026-07-01T00:00:00.000Z', details: { drillId: 'phish', score: '3', maxScore: '7' } },
+    { ...base, id: 'latest', outcome: 'completed', occurred_at: '2026-07-08T00:00:00.000Z', details: { drillId: 'phish', score: '7', maxScore: '7' } },
+    { ...base, id: 'invalid', occurred_at: '2026-07-09T00:00:00.000Z', details: { drillId: 'phish', score: '8', maxScore: '7' } },
+  ]);
+  assert.equal(report.totalAttempts, 2);
+  assert.equal(report.assessedDrills, 1);
+  assert.equal(report.improvingDrills, 1);
+  assert.equal(report.byDrill[0].firstPercent, 43);
+  assert.equal(report.byDrill[0].latestPercent, 100);
+  assert.equal(report.byDrill[0].change, 57);
+  assert.equal(report.byDrill[0].evidenceQuality, 'strong');
 });
 
 test('authenticator MFA setup makes password login require a second factor', async () => {

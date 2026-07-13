@@ -226,6 +226,7 @@ export const ASSESSMENT_DRILLS = [
       "unknowns list",
     ],
     scoringFocus: "classification, evidence handling, campaign judgement, containment quality",
+    rubricDimensions: ["classification", "evidence handling", "campaign judgement", "containment", "communication"],
   },
   {
     id: "triage-phishing-t1566",
@@ -241,6 +242,7 @@ export const ASSESSMENT_DRILLS = [
       "Write one containment recommendation without deleting evidence",
       "Record what remains unknown",
     ],
+    rubricDimensions: ["evidence capture", "indicator separation", "escalation", "containment", "unknowns"],
   },
   {
     id: "powershell-t1059",
@@ -256,6 +258,7 @@ export const ASSESSMENT_DRILLS = [
       "Name the evidence source used for confidence",
       "Write a short responder note",
     ],
+    rubricDimensions: ["behavior recognition", "context preservation", "classification", "evidence confidence", "handoff note"],
   },
   {
     id: "incident-handoff-csf",
@@ -271,5 +274,6 @@ export const ASSESSMENT_DRILLS = [
       "Assign owner and next deadline",
       "Mark the case ready for follow-up review",
     ],
+    rubricDimensions: ["impact", "preservation", "pending actions", "ownership", "review readiness"],
   },
 ];

@@ -42,6 +42,7 @@ const DETAIL_KEYS = new Set([
   'evidenceFields',
   'expectedArtifacts',
   'scoringFocus',
+  'rubricDimensions',
 ]);
 const BLOCKED_DETAIL_KEYS = /body|password|secret|token|apikey|api_key|cookie|credential/i;
 
@@ -113,6 +114,75 @@ export function formatSimulationEvent(row) {
   };
 }
 
+function assessmentBand(percent) {
+  if (percent >= 85) return 'strong';
+  if (percent >= 60) return 'developing';
+  return 'needs_review';
+}
+
+export function summarizeAssessmentAttempts(events = []) {
+  const attempts = events
+    .map((event) => {
+      const formatted = event.eventType ? event : formatSimulationEvent(event);
+      const drillId = text(formatted.details?.drillId, 120);
+      const score = Number.parseInt(formatted.details?.score, 10);
+      const maxScore = Number.parseInt(formatted.details?.maxScore, 10);
+      if (!drillId || !Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore < 1 || score < 0 || score > maxScore) return null;
+      const percent = Math.round((score / maxScore) * 100);
+      return {
+        id: formatted.id,
+        drillId,
+        title: formatted.title,
+        score,
+        maxScore,
+        percent,
+        evidenceQuality: assessmentBand(percent),
+        outcome: formatted.outcome,
+        occurredAt: formatted.occurredAt,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(a.occurredAt) - new Date(b.occurredAt));
+
+  const grouped = new Map();
+  for (const attempt of attempts) {
+    const history = grouped.get(attempt.drillId) || [];
+    history.push(attempt);
+    grouped.set(attempt.drillId, history);
+  }
+
+  const byDrill = [...grouped.entries()].map(([drillId, history]) => {
+    const first = history[0];
+    const latest = history[history.length - 1];
+    return {
+      drillId,
+      title: latest.title,
+      attempts: history.length,
+      firstPercent: first.percent,
+      latestPercent: latest.percent,
+      change: latest.percent - first.percent,
+      bestPercent: Math.max(...history.map((attempt) => attempt.percent)),
+      latestScore: latest.score,
+      maxScore: latest.maxScore,
+      evidenceQuality: latest.evidenceQuality,
+      latestOutcome: latest.outcome,
+      latestAt: latest.occurredAt,
+      history: history.slice(-5).reverse(),
+    };
+  }).sort((a, b) => new Date(b.latestAt) - new Date(a.latestAt));
+
+  return {
+    totalAttempts: attempts.length,
+    assessedDrills: byDrill.length,
+    averagePercent: attempts.length
+      ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.percent, 0) / attempts.length)
+      : 0,
+    improvingDrills: byDrill.filter((drill) => drill.attempts > 1 && drill.change > 0).length,
+    latestAttemptAt: byDrill[0]?.latestAt || null,
+    byDrill,
+  };
+}
+
 export function summarizeSimulationEvents(rows = []) {
   const events = rows.map(formatSimulationEvent).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
   const byDate = new Map();
@@ -143,5 +213,6 @@ export function summarizeSimulationEvents(rows = []) {
     outcomes,
     trend: trend.slice(-14),
     recentEvents: events.slice(0, 8),
+    assessments: summarizeAssessmentAttempts(events),
   };
 }

@@ -49,7 +49,7 @@
       <li>Bcrypt password hashes and hashed server-side session tokens.</li>
       <li><code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code> session cookies in production.</li>
       <li>Allowed-origin and CSRF checks for state-changing signed-in routes.</li>
-      <li>Server-side per-user access control on progress, notes, sessions, simulation events, export, and deletion.</li>
+      <li>Server-side per-user access control on progress, notes, sessions, simulation events, derived assessment outcome reports, export, and deletion.</li>
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
       <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
@@ -64,7 +64,7 @@
     <p>Account identity, authenticator MFA state if enabled, progress, notes, study sessions, and simulation-risk events are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
 
     <h3>Data minimization</h3>
-    <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes or simulation-event labels.</p>
+    <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes or simulation-event labels. Assessment percentages, evidence-quality bands, and improvement deltas are descriptive practice evidence, not certification or workplace-performance predictions.</p>
 
     <h2>Privacy Controls</h2>
     <p>The signed-in dashboard includes a Privacy Controls panel with two self-service actions:</p>
