@@ -14,7 +14,7 @@ Security reports are in scope for:
 - The self-hosted Fastify API under `api/`.
 - The PostgreSQL schema under `api/migrations/`.
 - Authentication, guest mode, account sync, progress tracking, task notes, study session logging, export, and deletion.
-- Deployment configuration in `netlify.toml`, `Dockerfile`, `api/Dockerfile`, `docker-compose.remote.yml`, and static policy pages under `public/`.
+- Deployment configuration in `deploy/nginx.coolify.conf`, `netlify.toml`, `Dockerfile`, `api/Dockerfile`, `docker-compose.remote.yml`, and static policy pages under `public/`.
 
 Out of scope:
 
@@ -41,7 +41,7 @@ Out of scope:
 - Signed-in mode sends account progress, notes, and session logs to the self-hosted API at `https://c3-api.mdpstudio.com.au`.
 - PostgreSQL is reachable only from the private Docker network. It must not expose a public host port.
 - The browser never receives database credentials, Google client secrets, SMTP secrets, service-role keys, or backup credentials.
-- Netlify serves the static frontend and applies the security headers configured in `netlify.toml`.
+- The current Coolify/nginx container serves the static frontend and applies `deploy/nginx.coolify.conf`. Netlify is retained only as a rollback path.
 
 ### Current Controls
 
@@ -61,8 +61,8 @@ Out of scope:
 - Google OAuth validates state, nonce, issuer, audience, expiry, and verified email before login.
 - Notes are rendered through React text nodes and textarea values, not raw HTML injection paths.
 - External curriculum links use `target="_blank"` with `rel="noopener noreferrer"`.
-- Netlify security headers set frame denial, MIME sniffing protection, strict referrer policy, and a restrictive permissions policy.
-- A `Content-Security-Policy` header is shipped from `netlify.toml` and `nginx.conf`, restricted to the frontend, Google Fonts, and `https://c3-api.mdpstudio.com.au`.
+- The current Coolify/nginx headers set frame denial, MIME sniffing protection, strict referrer policy, and a restrictive permissions policy. The rollback configurations mirror those controls.
+- A `Content-Security-Policy` header is shipped from `deploy/nginx.coolify.conf`, `netlify.toml`, and `nginx.conf`, restricted to the frontend, Google Fonts, and `https://c3-api.mdpstudio.com.au`.
 - The Coolify static deployment uses `deploy/nginx.coolify.conf`; live header checks must confirm it has not drifted to a generic nginx configuration and that HTML retains `no-transform` to prevent edge-injected scripts outside the reviewed CSP.
 
 ### Known Gaps
@@ -75,7 +75,7 @@ Out of scope:
 
 ## Content Security Policy
 
-The current policy is shipped as enforcing `Content-Security-Policy` from both `netlify.toml` and `nginx.conf`.
+The current policy is shipped as enforcing `Content-Security-Policy` from `deploy/nginx.coolify.conf`; `netlify.toml` and `nginx.conf` retain matching rollback and standard-image policies.
 
 - `default-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`.
 - `script-src 'self'`.
@@ -154,5 +154,5 @@ Before shipping security-sensitive changes:
 - Verify `/api/health` locally and through `https://c3-api.mdpstudio.com.au`.
 - Verify migrated Google and email users can access their data.
 - Verify backup creation and one restore dry run.
-- Re-check the CSP directive list in `netlify.toml` and `nginx.conf` when adding any new external script, style, font, image host, API host, OAuth provider, or form action.
+- Re-check the CSP directive list in `deploy/nginx.coolify.conf`, `netlify.toml`, and `nginx.conf` when adding any new external script, style, font, image host, API host, OAuth provider, or form action.
 - Verify the live Coolify response includes CSP, frame denial, MIME protection, referrer policy, and permissions policy from `deploy/nginx.coolify.conf`.

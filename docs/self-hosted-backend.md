@@ -1,12 +1,12 @@
 # Self-Hosted Backend Deployment
 
-Last updated: 2026-05-22
+Last updated: 2026-07-13
 
-Cyber Command Center now uses Netlify for the static frontend and a self-hosted Docker backend for signed-in accounts. Guest mode still works without any backend.
+Cyber Command Center uses a Coolify/nginx static frontend and a self-hosted Docker backend for signed-in accounts. The former Netlify frontend is retained only as a rollback path. Guest mode still works without any backend.
 
 ## Production Topology
 
-- Frontend: `https://c3.mdpstudio.com.au` on Netlify.
+- Frontend: `https://c3.mdpstudio.com.au` on the Coolify static nginx application.
 - API: `https://c3-api.mdpstudio.com.au` through Cloudflare Tunnel.
 - Remote host: the always-on MDP Studio remote PC.
 - Docker services: `c3-api`, `c3-postgres`, `c3-postgres-backup`.
@@ -64,13 +64,13 @@ c3-api.mdpstudio.com.au -> http://100.110.79.52:8089
 curl -fsS https://c3-api.mdpstudio.com.au/api/health
 ```
 
-7. Set Netlify environment variable:
+7. Build the frontend with the public API target:
 
-```txt
-VITE_C3_API_URL=https://c3-api.mdpstudio.com.au
+```bash
+VITE_C3_API_URL=https://c3-api.mdpstudio.com.au npm run build
 ```
 
-8. Redeploy Netlify and run the smoke tests in the README.
+8. Deploy the resulting `dist/` through the existing Coolify static-app procedure in the shared MDP deployment runbook. Install `deploy/nginx.coolify.conf` as the app nginx configuration, rebuild the container, and run the smoke tests below. Do not replace the configuration with a generic SPA template.
 
 ## Supabase Migration
 
@@ -97,7 +97,7 @@ export C3_SUPABASE_EXPORT_FILE=/path/to/c3-supabase-export-2026-05-15.json
 npm run migration:import-supabase -- --apply
 ```
 
-The apply run prints target counts from Postgres for the migrated Supabase IDs. Compare source and target counts before changing Netlify.
+The apply run prints target counts from Postgres for the migrated Supabase IDs. Compare source and target counts before changing the public frontend API target.
 
 Keep Supabase as rollback/archive for 14 days after cutover. Remove Supabase env vars only after the new API has passed smoke tests and the migrated users can access their data.
 
@@ -116,4 +116,4 @@ Keep Supabase as rollback/archive for 14 days after cutover. Remove Supabase env
 
 ## Backup Restore Gate
 
-Before cutover, restore the latest backup into a temporary Postgres container and verify the table list plus row counts. Do not switch Netlify to the production API until a restore has been proven once.
+Before cutover, restore the latest backup into a temporary Postgres container and verify the table list plus row counts. Do not point the public frontend at the production API until a restore has been proven once.

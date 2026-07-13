@@ -40,13 +40,12 @@
     <h2>Third-Party Services</h2>
     <ul>
       <li><strong>Google OAuth</strong>: optional sign-in (<a href="https://policies.google.com/privacy">their privacy policy</a>).</li>
-      <li><strong>Netlify</strong>: static frontend hosting (<a href="https://www.netlify.com/privacy/">their privacy policy</a>).</li>
-      <li><strong>Cloudflare</strong>: DNS and tunnel routing for the backend API (<a href="https://www.cloudflare.com/privacypolicy/">their privacy policy</a>).</li>
+      <li><strong>Cloudflare</strong>: DNS and reverse-proxy or tunnel routing for the frontend and backend API (<a href="https://www.cloudflare.com/privacypolicy/">their privacy policy</a>).</li>
       <li><strong>Email provider</strong>: password reset delivery when SMTP is configured.</li>
     </ul>
 
     <h2>Data Storage</h2>
-    <p>Signed-in account data is stored in a self-hosted PostgreSQL database in Docker. PostgreSQL is private to the backend network and is not exposed directly to the public internet.</p>
+    <p>The static frontend and signed-in API are hosted on MDP Studio-managed infrastructure. Signed-in account data is stored in a self-hosted PostgreSQL database in Docker. PostgreSQL is private to the backend network and is not exposed directly to the public internet.</p>
 
     <h2>Data Lifecycle</h2>
     <ul>

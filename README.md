@@ -93,7 +93,7 @@ docker run -p 3000:3000 cyber-command
 
 - **Frontend:** React 18, Vite, custom dark terminal aesthetic.
 - **Backend:** Fastify API, PostgreSQL, secure cookies, CSRF checks, Google OAuth, password reset, optional TOTP MFA, CSP reporting.
-- **Deployment:** Netlify frontend, remote Docker backend, Cloudflare Tunnel for the API.
+- **Deployment:** Coolify/nginx frontend, remote Docker backend, and Cloudflare routing; the former Netlify frontend remains a rollback path.
 
 ## Architecture
 

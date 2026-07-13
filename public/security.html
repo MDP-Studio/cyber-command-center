@@ -52,7 +52,7 @@
       <li>Server-side per-user access control on progress, notes, sessions, simulation events, derived assessment outcome reports, export, and deletion.</li>
       <li>Notes render through React text and textarea paths, not raw HTML injection paths.</li>
       <li>External links use safe new-tab attributes.</li>
-      <li>Netlify security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
+      <li>The current Coolify/nginx security headers block framing, MIME sniffing, camera, microphone, and geolocation permissions.</li>
       <li>An enforcing Content Security Policy allows the app, Google Fonts, and <code>https://c3-api.mdpstudio.com.au</code>.</li>
     </ul>
 
@@ -75,7 +75,7 @@
     </ul>
 
     <h2>Content Security Policy</h2>
-    <p>A <code>Content-Security-Policy</code> header is shipped from <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs and reports violations to <code>https://c3-api.mdpstudio.com.au/api/csp-report</code>.</p>
+    <p>A <code>Content-Security-Policy</code> header is shipped from the current <code>deploy/nginx.coolify.conf</code>, with matching rollback policies in <code>netlify.toml</code> and <code>nginx.conf</code>. It allows the asset domains the app currently needs and reports violations to <code>https://c3-api.mdpstudio.com.au/api/csp-report</code>.</p>
     <p>The policy was promoted after the remote API, tunnel, migration, backup restore, and production API smoke tests passed.</p>
 
     <h2>Known Gaps</h2>
