@@ -58,7 +58,9 @@ If `VITE_C3_API_URL` is empty, the app runs in guest-only mode. Signed-in sync u
 
 ## Deploy
 
-**Frontend:** Netlify remains the production frontend host. Set `VITE_C3_API_URL=https://c3-api.mdpstudio.com.au` only after the remote API passes health, migration, backup, and smoke tests.
+**Frontend:** the production frontend currently runs as a Coolify static nginx container; the previous Netlify site is a rollback path. Build with `VITE_C3_API_URL=https://c3-api.mdpstudio.com.au` only after the remote API passes health, migration, backup, and smoke tests.
+
+The current public frontend is served by the emergency Coolify static container described in the shared MDP deployment runbook. [`deploy/nginx.coolify.conf`](deploy/nginx.coolify.conf) is the canonical nginx configuration for that path and mirrors the repository's CSP and security headers. Do not replace it with a generic static-site config.
 
 **Search readiness:** `public/robots.txt` and `public/sitemap.xml` publish the canonical `https://c3.mdpstudio.com.au` URLs for the dashboard, privacy, terms, and security pages.
 Public growth pages live at `/roadmap` and `/soc-checklist` so the project can rank for student and junior analyst learning searches, not only branded app queries.
@@ -112,7 +114,7 @@ If VITE_C3_API_URL is empty:
 
 Security posture is documented in [`SECURITY.md`](SECURITY.md) and on the live [Security Policy](https://c3.mdpstudio.com.au/security) page. The current model is intentionally small: guest data stays in browser storage, signed-in account data is scoped by the backend API, email/password accounts can opt in to authenticator MFA, and task notes, simulation-event labels, or assessment-drill metadata should not be used for secrets, client data, payment details, or incident evidence. Assessment outcome reporting is descriptive training evidence, not a certification or hiring prediction.
 
-Production headers via `netlify.toml`:
+Production headers are defined for Netlify in `netlify.toml`, for the standard Docker image in `nginx.conf`, and for the current Coolify static container in `deploy/nginx.coolify.conf`:
 
 - `X-Frame-Options: DENY`
 - `X-Content-Type-Options: nosniff`
