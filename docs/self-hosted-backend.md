@@ -59,12 +59,17 @@ The command is idempotent and reports counts only. Do not rotate or remove
 `TOTP_ENCRYPTION_KEY` while MFA rows exist. New code can read legacy plaintext
 rows during rollout, but old releases cannot read `v1` encrypted envelopes.
 
-4. Verify health locally on the remote:
+4. Verify health from the remote host on the address explicitly bound by
+   `docker-compose.remote.yml`, and confirm the container health check:
 
 ```bash
-curl -fsS http://127.0.0.1:8089/api/health
 curl -fsS http://100.110.79.52:8089/api/health
+docker inspect --format '{{.State.Health.Status}}' c3-api
 ```
+
+`127.0.0.1:8089` is intentionally not a valid host-side probe because the API
+port is bound only to the remote PC's Tailscale address. Inside the container,
+the Docker health check still probes `127.0.0.1:8080`.
 
 5. Add the Cloudflare Tunnel route:
 
