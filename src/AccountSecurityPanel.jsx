@@ -6,8 +6,8 @@ const sans = "'Space Grotesk', sans-serif";
 const accent = "#00ffc8";
 const danger = "#ff2d6b";
 const warn = "#ffa500";
-const dim = "rgba(255,255,255,0.55)";
-const dimmer = "rgba(255,255,255,0.35)";
+const dim = "rgba(255,255,255,0.72)";
+const dimmer = "rgba(255,255,255,0.62)";
 const cardBg = "rgba(255,255,255,0.03)";
 const cardBorder = "rgba(255,255,255,0.1)";
 

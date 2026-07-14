@@ -17,6 +17,8 @@ import {
   SESSION_COOKIE,
   clearCookie,
   cookieOptions,
+  decryptTotpSecret,
+  encryptTotpSecret,
   formatTotpSecret,
   generateTotpSecret,
   hashIp,
@@ -194,9 +196,21 @@ function accountSecurityPayload(account) {
   };
 }
 
-function requireValidMfaCode(account, code, reply) {
+async function verifyStoredTotpCode(db, account, code, config) {
+  const decoded = decryptTotpSecret(account?.mfa_totp_secret, config.totpEncryptionKey);
+  if (!verifyTotpCode(code, decoded.secret)) return false;
+  if (decoded.legacy) {
+    await db.replaceMfaSecret(
+      account.id,
+      encryptTotpSecret(decoded.secret, config.totpEncryptionKey),
+    );
+  }
+  return true;
+}
+
+async function requireValidMfaCode(db, account, code, reply, config) {
   if (!account?.mfa_enabled_at) return true;
-  if (verifyTotpCode(code, account.mfa_totp_secret)) return true;
+  if (await verifyStoredTotpCode(db, account, code, config)) return true;
   reply.code(403).send({ error: 'MFA code required for this high-risk action.' });
   return false;
 }
@@ -293,7 +307,7 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     const challenge = ticket ? await db.consumeMfaChallenge(ticket, 'login') : null;
     if (!challenge) return reply.code(401).send({ error: 'MFA challenge is invalid or expired.' });
     const user = await db.findUserById(challenge.user_id);
-    if (!user?.mfa_enabled_at || !verifyTotpCode(code, user.mfa_totp_secret)) {
+    if (!user?.mfa_enabled_at || !(await verifyStoredTotpCode(db, user, code, config))) {
       return reply.code(401).send({ error: 'Invalid authenticator code.' });
     }
     return createLoginSession(db, reply, config, user);
@@ -412,7 +426,11 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     }
     const secret = generateTotpSecret();
     const expiresAt = minutesFromNow(15);
-    await db.setPendingMfaSecret(auth.user.id, secret, expiresAt);
+    await db.setPendingMfaSecret(
+      auth.user.id,
+      encryptTotpSecret(secret, config.totpEncryptionKey),
+      expiresAt,
+    );
     return {
       secret,
       secretFormatted: formatTotpSecret(secret),
@@ -429,10 +447,16 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     if (!account?.mfa_pending_totp_secret || !isFuture(account.mfa_pending_expires_at)) {
       return reply.code(400).send({ error: 'Start MFA setup again before verifying a code.' });
     }
-    if (!verifyTotpCode(code, account.mfa_pending_totp_secret)) {
+    const pending = decryptTotpSecret(account.mfa_pending_totp_secret, config.totpEncryptionKey);
+    if (!verifyTotpCode(code, pending.secret)) {
       return reply.code(400).send({ error: 'Enter a valid 6-digit authenticator code.' });
     }
-    const updated = await db.enableMfa(auth.user.id, account.mfa_pending_totp_secret);
+    const updated = await db.enableMfa(
+      auth.user.id,
+      pending.legacy
+        ? encryptTotpSecret(pending.secret, config.totpEncryptionKey)
+        : account.mfa_pending_totp_secret,
+    );
     return accountSecurityPayload(updated);
   });
 
@@ -442,7 +466,7 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     const code = String(request.body?.code || '');
     const account = await db.findUserById(auth.user.id);
     if (!account?.mfa_enabled_at) return accountSecurityPayload(account);
-    if (!requireValidMfaCode(account, code, reply)) return;
+    if (!(await requireValidMfaCode(db, account, code, reply, config))) return;
     const updated = await db.disableMfa(auth.user.id);
     return accountSecurityPayload(updated);
   });
@@ -530,7 +554,7 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     const auth = await requireAuth(request, reply, true);
     if (!auth) return;
     const account = await db.findUserById(auth.user.id);
-    if (!requireValidMfaCode(account, request.body?.mfaCode, reply)) return;
+    if (!(await requireValidMfaCode(db, account, request.body?.mfaCode, reply, config))) return;
     await db.deleteAccount(auth.user.id);
     clearSessionCookies(reply, config);
     return { ok: true };

@@ -29,6 +29,7 @@ SMTP_URL=smtp://user:password@smtp-host:587
 MAIL_FROM=Cyber Command Center <security@mdpstudio.com.au>
 PASSWORD_RESET_BASE_URL=https://c3.mdpstudio.com.au
 CSP_REPORT_IP_SALT=replace-with-long-random-salt
+TOTP_ENCRYPTION_KEY=replace-with-a-distinct-random-secret-of-at-least-32-characters
 ```
 
 For a dedicated Cloudflare Tunnel container, also set `CLOUDFLARED_TUNNEL_TOKEN`. The preferred default is to reuse the existing remote tunnel.
@@ -44,6 +45,19 @@ For the current MDP Studio remote PC, the compose file binds the API to `100.110
 docker compose --env-file .env.production -f docker-compose.remote.yml up -d c3-postgres c3-api c3-backup
 docker compose --env-file .env.production -f docker-compose.remote.yml exec c3-api node api/migrate.js
 ```
+
+For an upgrade from the plaintext MFA schema, deploy the backward-compatible
+API first, confirm `/api/health`, then migrate existing TOTP material without
+printing it:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.remote.yml exec c3-api npm run migration:encrypt-totp
+docker compose --env-file .env.production -f docker-compose.remote.yml exec c3-api npm run migration:encrypt-totp -- --apply
+```
+
+The command is idempotent and reports counts only. Do not rotate or remove
+`TOTP_ENCRYPTION_KEY` while MFA rows exist. New code can read legacy plaintext
+rows during rollout, but old releases cannot read `v1` encrypted envelopes.
 
 4. Verify health locally on the remote:
 
@@ -113,7 +127,27 @@ Keep Supabase as rollback/archive for 14 days after cutover. Remove Supabase env
 - Simulation-risk tracking remains audit-only: no outbound phishing sender, learner automation, or enterprise admin console. Assessment reports derive first/latest percentages and evidence-quality bands from compact score metadata and do not store raw lab evidence.
 - Browser devtools show no `*.supabase.co` requests.
 - CSP reports post to `/api/csp-report`.
+- CSP reports receive a 30-day expiry and expired active-database rows are purged on report intake.
 
 ## Backup Restore Gate
 
 Before cutover, restore the latest backup into a temporary Postgres container and verify the table list plus row counts. Do not point the public frontend at the production API until a restore has been proven once.
+
+## Deployment and rollback gates
+
+Pre-deploy:
+
+- Record the current frontend bundle checksum, API commit, container image ID,
+  database backup, and count of MFA-enabled users.
+- Add the distinct `TOTP_ENCRYPTION_KEY` without printing it and confirm its
+  file permissions.
+- Apply SQL migrations, deploy the backward-compatible API, then run the TOTP
+  migration dry-run before `--apply`.
+
+Rollback immediately if API health fails twice, login or MFA setup fails, CSP
+ingest returns non-2xx, the browser smoke test fails, or five-minute error rate
+exceeds 2 percent. Before the TOTP data migration, restore the prior API image.
+After any `v1` rows exist, keep this release's decryption code in service while
+rolling back unrelated frontend/API changes. If the encryption key is lost,
+the safe recovery is to disable affected users' MFA and require re-enrolment;
+never copy encrypted values into logs or revert them to plaintext.

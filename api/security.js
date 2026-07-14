@@ -6,6 +6,61 @@ export const CSRF_COOKIE = 'c3_csrf';
 export const OAUTH_STATE_COOKIE = 'c3_oauth_state';
 export const OAUTH_NONCE_COOKIE = 'c3_oauth_nonce';
 export const OAUTH_RETURN_COOKIE = 'c3_oauth_return';
+export const TOTP_SECRET_ENVELOPE_VERSION = 'v1';
+
+function totpEncryptionKey(keyMaterial) {
+  const value = String(keyMaterial || '');
+  if (value.length < 32) {
+    throw new Error('TOTP_ENCRYPTION_KEY must contain at least 32 characters');
+  }
+  return crypto.createHash('sha256').update(value, 'utf8').digest();
+}
+
+export function isEncryptedTotpSecret(value) {
+  return String(value || '').startsWith(`${TOTP_SECRET_ENVELOPE_VERSION}.`);
+}
+
+export function encryptTotpSecret(secret, keyMaterial) {
+  const plaintext = String(secret || '');
+  if (!plaintext) throw new Error('TOTP secret is required');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', totpEncryptionKey(keyMaterial), iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [
+    TOTP_SECRET_ENVELOPE_VERSION,
+    iv.toString('base64url'),
+    ciphertext.toString('base64url'),
+    tag.toString('base64url'),
+  ].join('.');
+}
+
+export function decryptTotpSecret(storedValue, keyMaterial) {
+  const stored = String(storedValue || '');
+  if (!stored) return { secret: null, version: null, legacy: false };
+  if (!isEncryptedTotpSecret(stored)) {
+    if (/^v\d+\./.test(stored)) {
+      throw new Error('Unsupported TOTP secret envelope');
+    }
+    return { secret: stored, version: 'legacy-plaintext', legacy: true };
+  }
+
+  const parts = stored.split('.');
+  if (parts.length !== 4 || parts[0] !== TOTP_SECRET_ENVELOPE_VERSION) {
+    throw new Error('Unsupported TOTP secret envelope');
+  }
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    totpEncryptionKey(keyMaterial),
+    Buffer.from(parts[1], 'base64url'),
+  );
+  decipher.setAuthTag(Buffer.from(parts[3], 'base64url'));
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(parts[2], 'base64url')),
+    decipher.final(),
+  ]).toString('utf8');
+  return { secret: plaintext, version: TOTP_SECRET_ENVELOPE_VERSION, legacy: false };
+}
 
 export function randomToken(bytes = 32) {
   return crypto.randomBytes(bytes).toString('base64url');

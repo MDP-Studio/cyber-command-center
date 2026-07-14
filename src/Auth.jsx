@@ -4,8 +4,8 @@ import { apiConfigured } from './apiClient';
 const mono = "'JetBrains Mono', monospace";
 const sans = "'Space Grotesk', sans-serif";
 const accent = "#00ffc8";
-const dim = "rgba(255,255,255,0.55)";
-const dimmer = "rgba(255,255,255,0.35)";
+const dim = "rgba(255,255,255,0.72)";
+const dimmer = "rgba(255,255,255,0.62)";
 const mdpProjectUrl = "https://mdpstudio.com.au/projects/cybersecurity-study-roadmap/";
 
 const inputStyle = {
@@ -317,7 +317,7 @@ export default function Auth({ onAuth }) {
           >
             {apiConfigured ? "Continue as guest" : "ENTER COMMAND CENTER"}
           </button>
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: mono, marginTop: 8 }}>
+          <p style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, fontFamily: mono, marginTop: 8 }}>
             Progress saved locally only - won't sync across devices
           </p>
         </div>

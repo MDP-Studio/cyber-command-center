@@ -61,7 +61,7 @@
     <p>Guest progress, notes, sessions, and simulation events stay in browser local storage until you clear site data or use the Privacy Controls panel.</p>
 
     <h3>Signed-in mode</h3>
-    <p>Account identity, authenticator MFA state if enabled, progress, notes, study sessions, and simulation-risk events are stored in the self-hosted PostgreSQL database until the account is deleted. Deleted records may remain in backups for the configured backup retention window.</p>
+    <p>Account identity, encrypted authenticator MFA state if enabled, progress, notes, study sessions, and simulation-risk events are stored in the self-hosted PostgreSQL database until the account is deleted. CSP violation reports expire from the active database after 30 days. Deleted or expired records may remain in backups for the configured backup retention window.</p>
 
     <h3>Data minimization</h3>
     <p>Do not store passwords, API keys, client data, payment details, private lab credentials, or live incident evidence in notes or simulation-event labels. Assessment percentages, evidence-quality bands, and improvement deltas are descriptive practice evidence, not certification or workplace-performance predictions.</p>

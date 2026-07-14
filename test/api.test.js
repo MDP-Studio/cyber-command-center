@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createApp } from '../api/app.js';
-import { generateTotpCode, hashToken } from '../api/security.js';
+import { generateTotpCode, hashToken, isEncryptedTotpSecret } from '../api/security.js';
 import { summarizeAssessmentAttempts } from '../api/simulation.js';
 
 const ORIGIN = 'https://c3.mdpstudio.com.au';
@@ -117,6 +117,12 @@ class FakeDb {
     user.mfa_enabled_at = new Date().toISOString();
     user.mfa_pending_totp_secret = null;
     user.mfa_pending_expires_at = null;
+    return user;
+  }
+
+  async replaceMfaSecret(userId, secret) {
+    const user = await this.findUserById(userId);
+    user.mfa_totp_secret = secret;
     return user;
   }
 
@@ -271,6 +277,7 @@ function testConfig() {
     passwordResetBaseUrl: ORIGIN,
     authLogResetLinks: false,
     cspReportIpSalt: 'test-salt',
+    totpEncryptionKey: 'test-only-totp-encryption-key-with-32-characters',
   };
 }
 
@@ -596,7 +603,7 @@ test('assessment summary reports longitudinal improvement and ignores malformed 
 });
 
 test('authenticator MFA setup makes password login require a second factor', async () => {
-  const { app } = appWith();
+  const { app, db } = appWith();
   const signup = await app.inject({
     method: 'POST',
     url: '/api/auth/signup',
@@ -615,6 +622,9 @@ test('authenticator MFA setup makes password login require a second factor', asy
   assert.equal(setup.statusCode, 200);
   const setupBody = body(setup);
   assert.match(setupBody.otpauthUri, /^otpauth:\/\/totp\//);
+  const storedPending = await db.findUserByEmail('mfa@example.com');
+  assert.equal(isEncryptedTotpSecret(storedPending.mfa_pending_totp_secret), true);
+  assert.equal(storedPending.mfa_pending_totp_secret.includes(setupBody.secret), false);
 
   const enable = await app.inject({
     method: 'POST',
@@ -625,6 +635,8 @@ test('authenticator MFA setup makes password login require a second factor', asy
   assert.equal(enable.statusCode, 200);
   assert.equal(body(enable).mfa.enabled, true);
   assert.equal(body(enable).mfa.loginProtected, true);
+  const storedEnabled = await db.findUserByEmail('mfa@example.com');
+  assert.equal(isEncryptedTotpSecret(storedEnabled.mfa_totp_secret), true);
 
   const login = await app.inject({
     method: 'POST',

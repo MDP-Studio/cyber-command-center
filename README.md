@@ -78,7 +78,7 @@ docker run -p 3000:3000 cyber-command
 
 - **Zero-friction guest mode** - works without any backend; progress is saved to localStorage.
 - **Google OAuth + email auth** - sign up, log in, and reset password through the self-hosted API.
-- **Optional authenticator MFA** - email/password accounts can require a 6-digit code at login and for high-risk account deletion.
+- **Optional authenticator MFA** - email/password accounts can require a 6-digit code at login and for high-risk account deletion. TOTP secrets use a versioned AES-256-GCM envelope at rest.
 - **6-phase curriculum** - structured cybersecurity training across foundations, SOC, offense, forensics, governance, and certification prep.
 - **Real-time progress tracking** - synced across devices for signed-in users, local-only for guests.
 - **Study timer** - start, pause, and stop with labeled session logging.
@@ -122,6 +122,11 @@ Production headers are defined for Netlify in `netlify.toml`, for the standard D
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 - `Content-Security-Policy` limited to the app, Google Fonts, and `https://c3-api.mdpstudio.com.au`
 - `Cache-Control: public, no-cache, no-transform` for HTML to prevent edge script injection
+
+CI runs lint, unit tests, a real Postgres migration/integration test, the
+production build, focused Playwright/axe keyboard checks, and the production
+dependency audit. CSP violation reports expire from the active database after
+30 days and may remain only in the documented backup window.
 
 Security reports: email `meidie@mdpstudio.com.au` with the subject `Security report: Cyber Command Center`. See `SECURITY.md` for scope, data lifecycle, known gaps, and incident reporting details.
 

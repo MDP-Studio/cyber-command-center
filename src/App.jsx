@@ -11,8 +11,8 @@ const mono = "'JetBrains Mono', 'Fira Code', monospace";
 const sans = "'Space Grotesk', sans-serif";
 const cardBg = "rgba(255,255,255,0.03)";
 const cardBorder = "rgba(255,255,255,0.1)";
-const dim = "rgba(255,255,255,0.55)";
-const dimmer = "rgba(255,255,255,0.35)";
+const dim = "rgba(255,255,255,0.72)";
+const dimmer = "rgba(255,255,255,0.62)";
 const accent = "#00ffc8";
 const mdpProjectUrl = "https://mdpstudio.com.au/projects/cybersecurity-study-roadmap/";
 
@@ -133,9 +133,15 @@ function DailyLog({ logs, isOpen, onToggle }) {
       background: cardBg, border: `1px solid ${isOpen ? "#ff6b35" + "40" : cardBorder}`,
       borderRadius: 12, overflow: "hidden", marginBottom: 16, transition: "border-color 0.3s",
     }}>
-      <div onClick={onToggle} style={{
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls="training-log-content"
+        style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 24px", cursor: "pointer", userSelect: "none",
+        width: "100%", padding: "20px 24px", cursor: "pointer", userSelect: "none",
+        background: "transparent", border: 0, color: "inherit", textAlign: "left",
       }}>
         <div>
           <div style={{ fontSize: 12, fontFamily: mono, color: "#ff6b35", letterSpacing: "0.15em", marginBottom: 4 }}>TRAINING LOG</div>
@@ -144,9 +150,9 @@ function DailyLog({ logs, isOpen, onToggle }) {
           </div>
         </div>
         <span style={{ color: dim, fontSize: 18, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>{"\u25BE"}</span>
-      </div>
+      </button>
       {isOpen && (
-        <div style={{ padding: "0 24px 24px", maxHeight: 400, overflowY: "auto" }}>
+        <div id="training-log-content" style={{ padding: "0 24px 24px", maxHeight: 400, overflowY: "auto" }}>
           {sortedDates.length === 0 ? (
             <div style={{ color: dimmer, fontSize: 13, fontFamily: sans, padding: "12px 0" }}>No sessions yet. Start the timer to begin.</div>
           ) : sortedDates.map((date) => {
@@ -175,22 +181,23 @@ function DailyLog({ logs, isOpen, onToggle }) {
 /* Task Item */
 function TaskItem({ task, done, onToggle, note, onNoteChange }) {
   const [showNote, setShowNote] = useState(false);
+  const checkboxId = `task-${task.id}`;
+  const noteId = `task-note-${task.id}`;
   return (
     <div style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-      <div onClick={onToggle} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", cursor: "pointer", userSelect: "none" }}>
-        <div style={{
-          width: 20, height: 20, minWidth: 20, borderRadius: 4,
-          border: done ? `2px solid ${accent}` : `2px solid ${dimmer}`,
-          background: done ? "rgba(0,255,200,0.15)" : "transparent",
-          display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2, transition: "all 0.2s",
-        }}>
-          {done && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-        </div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0" }}>
+        <input
+          id={checkboxId}
+          type="checkbox"
+          checked={done}
+          onChange={onToggle}
+          style={{ width: 20, height: 20, minWidth: 20, marginTop: 2, accentColor: accent, cursor: "pointer" }}
+        />
         <div style={{ flex: 1 }}>
-          <span style={{
-            color: done ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.9)",
-            textDecoration: done ? "line-through" : "none", fontSize: 15, lineHeight: 1.5, fontFamily: sans, transition: "color 0.2s",
-          }}>{task.label}</span>
+          <label htmlFor={checkboxId} style={{
+            color: done ? dimmer : "rgba(255,255,255,0.9)",
+            textDecoration: done ? "line-through" : "none", fontSize: 15, lineHeight: 1.5, fontFamily: sans, transition: "color 0.2s", cursor: "pointer",
+          }}>{task.label}</label>
           {task.link && (
             <a href={task.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
               style={{ display: "inline-block", marginLeft: 8, color: accent, fontSize: 12, textDecoration: "none", opacity: 0.8, fontFamily: mono }}>
@@ -198,16 +205,17 @@ function TaskItem({ task, done, onToggle, note, onNoteChange }) {
             </a>
           )}
           {task.hours > 0 && <span style={{ display: "inline-block", marginLeft: 8, color: dimmer, fontSize: 12, fontFamily: mono }}>~{task.hours}h</span>}
-          <button onClick={(e) => { e.stopPropagation(); setShowNote(!showNote); }}
+          <button type="button" onClick={() => setShowNote(!showNote)} aria-expanded={showNote} aria-controls={noteId}
             style={{ display: "inline-block", marginLeft: 8, background: "none", border: "none", color: note ? "#a855f7" : dimmer, fontSize: 12, fontFamily: mono, cursor: "pointer", padding: 0 }}>
             {note ? "\u270E notes" : "+ note"}
           </button>
         </div>
       </div>
       {showNote && (
-        <div style={{ paddingLeft: 32, paddingBottom: 10 }}>
-          <textarea value={note || ""} onChange={(e) => onNoteChange(task.id, e.target.value)}
-            onClick={(e) => e.stopPropagation()} placeholder="Notes, commands, flags, findings..."
+        <div id={noteId} style={{ paddingLeft: 32, paddingBottom: 10 }}>
+          <label htmlFor={`${noteId}-input`} style={{ display: "block", color: dim, fontSize: 12, fontFamily: mono, marginBottom: 5 }}>Task notes</label>
+          <textarea id={`${noteId}-input`} value={note || ""} onChange={(e) => onNoteChange(task.id, e.target.value)}
+            placeholder="Notes, commands, flags, findings..."
             rows={3} style={{
               width: "100%", background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.2)",
               borderRadius: 8, padding: "10px 12px", color: "rgba(255,255,255,0.85)", fontSize: 13,
@@ -229,9 +237,15 @@ function PhaseCard({ phase, progress, notes, onToggleTask, onNoteChange, isOpen,
       background: cardBg, border: `1px solid ${isOpen ? phase.color + "40" : cardBorder}`,
       borderRadius: 12, overflow: "hidden", transition: "border-color 0.3s", marginBottom: 16,
     }}>
-      <div onClick={onToggleOpen} style={{
+      <button
+        type="button"
+        onClick={onToggleOpen}
+        aria-expanded={isOpen}
+        aria-controls={`phase-${phase.id}-content`}
+        style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 24px", cursor: "pointer", userSelect: "none",
+        width: "100%", padding: "20px 24px", cursor: "pointer", userSelect: "none",
+        background: "transparent", border: 0, color: "inherit", textAlign: "left",
       }}>
         <div style={{ flex: 1 }}>
           <div style={{ marginBottom: 4 }}>
@@ -242,15 +256,15 @@ function PhaseCard({ phase, progress, notes, onToggleTask, onNoteChange, isOpen,
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ color: dim, fontSize: 13, fontFamily: mono, textAlign: "right" }}>
             {doneCount}/{allTasks.length}
-            {phase.hours > 0 && <span style={{ display: "block", fontSize: 11, opacity: 0.7 }}>~{phase.hours}h</span>}
+            {phase.hours > 0 && <span style={{ display: "block", fontSize: 11 }}>~{phase.hours}h</span>}
           </div>
           <ProgressRing percent={percent} color={phase.color} />
           <span style={{ color: dim, fontSize: 18, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>{"\u25BE"}</span>
         </div>
-      </div>
+      </button>
       {isOpen && (
-        <div style={{ padding: "0 24px 24px" }}>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, fontFamily: sans, lineHeight: 1.6, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${cardBorder}` }}>
+        <div id={`phase-${phase.id}-content`} style={{ padding: "0 24px 24px" }}>
+          <p style={{ color: dim, fontSize: 14, fontFamily: sans, lineHeight: 1.6, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${cardBorder}` }}>
             {phase.description}
           </p>
           {phase.modules.map((mod) => (
@@ -271,7 +285,7 @@ function PhaseCard({ phase, progress, notes, onToggleTask, onNoteChange, isOpen,
 /* Nav Tab */
 function NavTab({ label, icon, active, onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button type="button" onClick={onClick} aria-pressed={active} style={{
       flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
       padding: "10px 0", background: "transparent", border: "none",
       color: active ? accent : dimmer, cursor: "pointer", transition: "color 0.2s",
@@ -460,13 +474,13 @@ function SimulationRiskPanel({ simulation }) {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginTop: 16 }}>
-        <select value={eventType} onChange={(event) => setEventType(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
+        <select aria-label="Simulation drill type" value={eventType} onChange={(event) => setEventType(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
           {SIMULATION_EVENT_TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
-        <select value={outcome} onChange={(event) => setOutcome(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
+        <select aria-label="Simulation outcome" value={outcome} onChange={(event) => setOutcome(event.target.value)} style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: mono, fontSize: 12 }}>
           {SIMULATION_OUTCOMES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
-        <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Optional drill label" style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: sans, fontSize: 13 }} />
+        <input aria-label="Optional drill label" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Optional drill label" style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${cardBorder}`, color: '#fff', borderRadius: 8, padding: '10px 12px', fontFamily: sans, fontSize: 13 }} />
         <button disabled={simulation.busy} style={{ padding: '10px 14px', background: '#38bdf815', border: '1px solid rgba(56,189,248,0.45)', borderRadius: 8, color: '#38bdf8', fontSize: 12, fontFamily: mono, fontWeight: 800, cursor: simulation.busy ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
           {simulation.busy ? 'LOGGING...' : 'LOG EVENT'}
         </button>
@@ -718,16 +732,16 @@ function Dashboard({ user, signOut, isGuest }) {
 
       {/* Guest banner */}
       {isGuest && (
-        <div style={{
+        <aside aria-label="Guest mode status" style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           padding: "10px 16px", background: "rgba(0,255,200,0.06)",
           borderBottom: "1px solid rgba(0,255,200,0.15)",
           fontSize: 13, fontFamily: mono, color: accent, letterSpacing: "0.05em",
         }}>
           <span style={{ opacity: 0.9 }}>GUEST MODE</span>
-          <span style={{ opacity: 0.3 }}>|</span>
-          <span style={{ opacity: 0.5 }}>progress saved in this browser</span>
-        </div>
+          <span aria-hidden="true" style={{ opacity: 0.7 }}>|</span>
+          <span style={{ opacity: 0.85 }}>progress saved in this browser</span>
+        </aside>
       )}
 
       {/* Header */}
@@ -738,7 +752,7 @@ function Dashboard({ user, signOut, isGuest }) {
         }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontSize: 12, fontFamily: mono, color: accent + "88", letterSpacing: "0.2em", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontFamily: mono, color: accent + "cc", letterSpacing: "0.2em", marginBottom: 8 }}>
               SYSTEM://CYBER-COMMAND
             </div>
             <h1 style={{ fontSize: 28, fontFamily: mono, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 4 }}>
@@ -757,7 +771,7 @@ function Dashboard({ user, signOut, isGuest }) {
       </header>
 
       {/* Stats */}
-      <div style={{
+      <section aria-label="Training progress summary" style={{
         display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1,
         background: "rgba(255,255,255,0.04)", borderBottom: `1px solid ${cardBorder}`,
       }}>
@@ -773,7 +787,7 @@ function Dashboard({ user, signOut, isGuest }) {
             <div style={{ fontSize: 11, color: dimmer, fontFamily: mono }}>{s.sub}</div>
           </div>
         ))}
-      </div>
+      </section>
 
       {/* Progress bar */}
       <div style={{ padding: "12px 24px", borderBottom: `1px solid ${cardBorder}` }}>

@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { c3Api } from './apiClient';
 
 const mono = "'JetBrains Mono', monospace";
 const sans = "'Space Grotesk', sans-serif";
 const accent = "#00ffc8";
 const danger = "#ff2d6b";
-const dim = "rgba(255,255,255,0.55)";
-const dimmer = "rgba(255,255,255,0.35)";
+const dim = "rgba(255,255,255,0.72)";
+const dimmer = "rgba(255,255,255,0.62)";
 const cardBg = "rgba(255,255,255,0.03)";
 const cardBorder = "rgba(255,255,255,0.1)";
 
@@ -49,7 +49,12 @@ export default function PrivacyPanel({ user, isGuest, accountSecurity = null }) 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+  const confirmInputRef = useRef(null);
   const deleteRequiresMfa = Boolean(!isGuest && accountSecurity?.mfa?.enabled);
+
+  useEffect(() => {
+    if (confirmOpen) confirmInputRef.current?.focus();
+  }, [confirmOpen]);
 
   const handleExport = async () => {
     setBusy('export');
@@ -198,10 +203,10 @@ export default function PrivacyPanel({ user, isGuest, accountSecurity = null }) 
               Type <span style={{ color: danger }}>DELETE</span> to confirm.
             </p>
             <input
+              ref={confirmInputRef}
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              autoFocus
               style={{
                 width: '100%',
                 background: 'rgba(255,255,255,0.06)',

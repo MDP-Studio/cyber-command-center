@@ -20,6 +20,7 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       PASSWORD_RESET_BASE_URL: https://c3.mdpstudio.com.au
       CSP_REPORT_IP_SALT: ${CSP_REPORT_IP_SALT}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
     depends_on:
       c3-postgres:
         condition: service_healthy

@@ -164,6 +164,17 @@ export class PostgresDatabase {
     return rows[0] || null;
   }
 
+  async replaceMfaSecret(userId, secret) {
+    const { rows } = await this.query(
+      `update users
+       set mfa_totp_secret = $2, updated_at = now()
+       where id = $1 and mfa_totp_secret is not null
+       returning id`,
+      [userId, secret],
+    );
+    return rows[0] || null;
+  }
+
   async disableMfa(userId) {
     const { rows } = await this.query(
       `update users
@@ -355,10 +366,13 @@ export class PostgresDatabase {
   }
 
   async insertCspReport({ body, userAgent, ipHash }) {
-    await this.query(
-      'insert into csp_reports (body, user_agent, ip_hash) values ($1, $2, $3)',
-      [body, userAgent || null, ipHash],
-    );
+    await this.transaction(async (tx) => {
+      await tx.query('delete from csp_reports where expires_at <= now()');
+      await tx.query(
+        'insert into csp_reports (body, user_agent, ip_hash) values ($1, $2, $3)',
+        [body, userAgent || null, ipHash],
+      );
+    });
   }
 }
 

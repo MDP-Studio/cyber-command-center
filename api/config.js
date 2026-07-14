@@ -26,7 +26,7 @@ export function loadConfig(env = process.env) {
   const apiOrigin = env.API_ORIGIN || 'http://127.0.0.1:8088';
   const appOrigins = readList(env.APP_ORIGIN || env.ALLOWED_ORIGINS, DEFAULT_APP_ORIGINS);
 
-  return {
+  const config = {
     nodeEnv: env.NODE_ENV || 'development',
     production,
     host: env.API_HOST || '0.0.0.0',
@@ -47,7 +47,13 @@ export function loadConfig(env = process.env) {
     passwordResetBaseUrl: env.PASSWORD_RESET_BASE_URL || 'https://c3.mdpstudio.com.au',
     authLogResetLinks: readBool(env.AUTH_LOG_RESET_LINKS, !production),
     cspReportIpSalt: env.CSP_REPORT_IP_SALT || env.SESSION_SECRET || 'local-csp-report-salt',
+    totpEncryptionKey: env.TOTP_ENCRYPTION_KEY || (production ? '' : 'local-development-only-totp-key-change-me'),
   };
+
+  if (production && config.totpEncryptionKey.length < 32) {
+    throw new Error('TOTP_ENCRYPTION_KEY must contain at least 32 characters in production');
+  }
+  return config;
 }
 
 export function isAllowedOrigin(config, origin) {
