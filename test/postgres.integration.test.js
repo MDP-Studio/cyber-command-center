@@ -17,7 +17,11 @@ test('Postgres stores a versioned TOTP envelope and expires CSP reports', {
   let user;
   try {
     await db.health();
-    user = await db.createUser({ email, displayName: 'Postgres integration' });
+    user = await db.createUser({
+      email,
+      displayName: 'Postgres integration',
+      passwordHash: 'integration-test-password-hash',
+    });
     const encrypted = encryptTotpSecret('JBSWY3DPEHPK3PXP', key);
     await db.setPendingMfaSecret(user.id, encrypted, new Date(Date.now() + 60000));
     const stored = await db.findUserById(user.id);
