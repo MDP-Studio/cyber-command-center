@@ -37,29 +37,64 @@ export function encryptTotpSecret(secret, keyMaterial) {
 
 export function decryptTotpSecret(storedValue, keyMaterial) {
   const stored = String(storedValue || '');
-  if (!stored) return { secret: null, version: null, legacy: false };
+  if (!stored) {
+    return {
+      secret: null,
+      version: null,
+      legacy: false,
+      keyIndex: null,
+      needsRewrap: false,
+    };
+  }
   if (!isEncryptedTotpSecret(stored)) {
     if (/^v\d+\./.test(stored)) {
       throw new Error('Unsupported TOTP secret envelope');
     }
-    return { secret: stored, version: 'legacy-plaintext', legacy: true };
+    return {
+      secret: stored,
+      version: 'legacy-plaintext',
+      legacy: true,
+      keyIndex: null,
+      needsRewrap: true,
+    };
   }
 
   const parts = stored.split('.');
   if (parts.length !== 4 || parts[0] !== TOTP_SECRET_ENVELOPE_VERSION) {
     throw new Error('Unsupported TOTP secret envelope');
   }
-  const decipher = crypto.createDecipheriv(
-    'aes-256-gcm',
-    totpEncryptionKey(keyMaterial),
-    Buffer.from(parts[1], 'base64url'),
-  );
-  decipher.setAuthTag(Buffer.from(parts[3], 'base64url'));
-  const plaintext = Buffer.concat([
-    decipher.update(Buffer.from(parts[2], 'base64url')),
-    decipher.final(),
-  ]).toString('utf8');
-  return { secret: plaintext, version: TOTP_SECRET_ENVELOPE_VERSION, legacy: false };
+  const keyRing = Array.isArray(keyMaterial) ? keyMaterial : [keyMaterial];
+  if (keyRing.length === 0) throw new Error('At least one TOTP encryption key is required');
+
+  for (const [keyIndex, candidate] of keyRing.entries()) {
+    try {
+      const decipher = crypto.createDecipheriv(
+        'aes-256-gcm',
+        totpEncryptionKey(candidate),
+        Buffer.from(parts[1], 'base64url'),
+      );
+      decipher.setAuthTag(Buffer.from(parts[3], 'base64url'));
+      const plaintext = Buffer.concat([
+        decipher.update(Buffer.from(parts[2], 'base64url')),
+        decipher.final(),
+      ]).toString('utf8');
+      return {
+        secret: plaintext,
+        version: TOTP_SECRET_ENVELOPE_VERSION,
+        legacy: false,
+        keyIndex,
+        needsRewrap: keyIndex !== 0,
+      };
+    } catch (error) {
+      if (keyIndex === keyRing.length - 1) {
+        throw new Error('TOTP secret could not be decrypted with the configured key ring', {
+          cause: error,
+        });
+      }
+    }
+  }
+
+  throw new Error('TOTP key ring processing failed unexpectedly');
 }
 
 export function randomToken(bytes = 32) {

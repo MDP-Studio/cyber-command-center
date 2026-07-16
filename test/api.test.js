@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createApp } from '../api/app.js';
-import { generateTotpCode, hashToken, isEncryptedTotpSecret } from '../api/security.js';
+import {
+  decryptTotpSecret,
+  encryptTotpSecret,
+  generateTotpCode,
+  hashToken,
+  isEncryptedTotpSecret,
+} from '../api/security.js';
 import { summarizeAssessmentAttempts } from '../api/simulation.js';
 
 const ORIGIN = 'https://c3.mdpstudio.com.au';
@@ -120,8 +126,9 @@ class FakeDb {
     return user;
   }
 
-  async replaceMfaSecret(userId, secret) {
+  async replaceMfaSecret(userId, expectedSecret, secret) {
     const user = await this.findUserById(userId);
+    if (user.mfa_totp_secret !== expectedSecret) return null;
     user.mfa_totp_secret = secret;
     return user;
   }
@@ -262,6 +269,7 @@ class FakeDb {
 }
 
 function testConfig() {
+  const totpEncryptionKey = 'test-only-totp-encryption-key-with-32-characters';
   return {
     production: false,
     appOrigins: [ORIGIN],
@@ -277,7 +285,9 @@ function testConfig() {
     passwordResetBaseUrl: ORIGIN,
     authLogResetLinks: false,
     cspReportIpSalt: 'test-salt',
-    totpEncryptionKey: 'test-only-totp-encryption-key-with-32-characters',
+    totpEncryptionKey,
+    totpPreviousEncryptionKeys: [],
+    totpEncryptionKeys: [totpEncryptionKey],
   };
 }
 
@@ -293,7 +303,7 @@ function body(response) {
 function appWith(db = new FakeDb(), extras = {}) {
   const app = createApp({
     db,
-    config: testConfig(),
+    config: { ...testConfig(), ...extras.config },
     mailer: extras.mailer || { async sendPasswordReset() { return { sent: true }; } },
     googleClient: extras.googleClient || {
       async exchangeCode() { return { id_token: 'mock-id-token' }; },
@@ -658,6 +668,48 @@ test('authenticator MFA setup makes password login require a second factor', asy
   assert.equal(verified.statusCode, 200);
   assert.equal(body(verified).user.email, 'mfa@example.com');
   assert.equal(body(verified).user.mfaEnabled, true);
+  await app.close();
+});
+
+test('successful MFA verification lazily re-wraps a previous-key envelope', async () => {
+  const primaryKey = 'new-primary-test-totp-key-with-at-least-32-characters';
+  const previousKey = 'previous-test-totp-key-with-at-least-32-characters';
+  const secret = 'JBSWY3DPEHPK3PXP';
+  const { app, db } = appWith(new FakeDb(), {
+    config: {
+      totpEncryptionKey: primaryKey,
+      totpPreviousEncryptionKeys: [previousKey],
+      totpEncryptionKeys: [primaryKey, previousKey],
+    },
+  });
+  const signup = await app.inject({
+    method: 'POST',
+    url: '/api/auth/signup',
+    headers: { origin: ORIGIN },
+    payload: { email: 'rotation@example.com', password: 'long-password', displayName: 'Rotation' },
+  });
+  assert.equal(signup.statusCode, 200);
+  const user = await db.findUserByEmail('rotation@example.com');
+  const previousEnvelope = encryptTotpSecret(secret, previousKey);
+  user.mfa_totp_secret = previousEnvelope;
+  user.mfa_enabled_at = new Date().toISOString();
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    headers: { origin: ORIGIN },
+    payload: { email: 'rotation@example.com', password: 'long-password' },
+  });
+  const verified = await app.inject({
+    method: 'POST',
+    url: '/api/auth/mfa/login/verify',
+    headers: { origin: ORIGIN },
+    payload: { ticket: body(login).ticket, code: generateTotpCode(secret) },
+  });
+
+  assert.equal(verified.statusCode, 200);
+  assert.notEqual(user.mfa_totp_secret, previousEnvelope);
+  assert.equal(decryptTotpSecret(user.mfa_totp_secret, primaryKey).needsRewrap, false);
   await app.close();
 });
 

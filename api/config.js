@@ -25,6 +25,9 @@ export function loadConfig(env = process.env) {
   const production = env.NODE_ENV === 'production';
   const apiOrigin = env.API_ORIGIN || 'http://127.0.0.1:8088';
   const appOrigins = readList(env.APP_ORIGIN || env.ALLOWED_ORIGINS, DEFAULT_APP_ORIGINS);
+  const totpEncryptionKey = env.TOTP_ENCRYPTION_KEY
+    || (production ? '' : 'local-development-only-totp-key-change-me');
+  const totpPreviousEncryptionKeys = readList(env.TOTP_PREVIOUS_ENCRYPTION_KEYS, []);
 
   const config = {
     nodeEnv: env.NODE_ENV || 'development',
@@ -47,11 +50,19 @@ export function loadConfig(env = process.env) {
     passwordResetBaseUrl: env.PASSWORD_RESET_BASE_URL || 'https://c3.mdpstudio.com.au',
     authLogResetLinks: readBool(env.AUTH_LOG_RESET_LINKS, !production),
     cspReportIpSalt: env.CSP_REPORT_IP_SALT || env.SESSION_SECRET || 'local-csp-report-salt',
-    totpEncryptionKey: env.TOTP_ENCRYPTION_KEY || (production ? '' : 'local-development-only-totp-key-change-me'),
+    totpEncryptionKey,
+    totpPreviousEncryptionKeys,
+    totpEncryptionKeys: [totpEncryptionKey, ...totpPreviousEncryptionKeys],
   };
 
   if (production && config.totpEncryptionKey.length < 32) {
     throw new Error('TOTP_ENCRYPTION_KEY must contain at least 32 characters in production');
+  }
+  if (config.totpPreviousEncryptionKeys.some((key) => key.length < 32)) {
+    throw new Error('Every TOTP_PREVIOUS_ENCRYPTION_KEYS entry must contain at least 32 characters');
+  }
+  if (new Set(config.totpEncryptionKeys).size !== config.totpEncryptionKeys.length) {
+    throw new Error('TOTP encryption keys must be unique');
   }
   return config;
 }

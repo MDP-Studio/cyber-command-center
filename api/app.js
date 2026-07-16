@@ -197,11 +197,12 @@ function accountSecurityPayload(account) {
 }
 
 async function verifyStoredTotpCode(db, account, code, config) {
-  const decoded = decryptTotpSecret(account?.mfa_totp_secret, config.totpEncryptionKey);
+  const decoded = decryptTotpSecret(account?.mfa_totp_secret, config.totpEncryptionKeys);
   if (!verifyTotpCode(code, decoded.secret)) return false;
-  if (decoded.legacy) {
+  if (decoded.needsRewrap) {
     await db.replaceMfaSecret(
       account.id,
+      account.mfa_totp_secret,
       encryptTotpSecret(decoded.secret, config.totpEncryptionKey),
     );
   }
@@ -447,13 +448,16 @@ export function createApp({ db, config = loadConfig(), mailer = createMailer(con
     if (!account?.mfa_pending_totp_secret || !isFuture(account.mfa_pending_expires_at)) {
       return reply.code(400).send({ error: 'Start MFA setup again before verifying a code.' });
     }
-    const pending = decryptTotpSecret(account.mfa_pending_totp_secret, config.totpEncryptionKey);
+    const pending = decryptTotpSecret(
+      account.mfa_pending_totp_secret,
+      config.totpEncryptionKeys,
+    );
     if (!verifyTotpCode(code, pending.secret)) {
       return reply.code(400).send({ error: 'Enter a valid 6-digit authenticator code.' });
     }
     const updated = await db.enableMfa(
       auth.user.id,
-      pending.legacy
+      pending.needsRewrap
         ? encryptTotpSecret(pending.secret, config.totpEncryptionKey)
         : account.mfa_pending_totp_secret,
     );

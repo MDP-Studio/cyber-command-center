@@ -50,7 +50,7 @@ Out of scope:
 - Simulation-risk tracking is audit-only. It records local or signed-in drill outcomes and does not send phishing messages, automate learners, or create an enterprise admin console.
 - Assessment drills record only compact rubric metadata such as drill ID, mapped technique, score, maximum score, rubric dimensions, and reference. First-to-latest deltas and evidence-quality bands are derived from those scores. They are not an evidence repository, certification, or prediction of workplace performance.
 - Email/password accounts can opt in to authenticator MFA. Once enabled, password login returns a short-lived MFA challenge instead of a session until a valid 6-digit TOTP code is submitted.
-- TOTP secrets are encrypted at rest with a distinct `TOTP_ENCRYPTION_KEY`. The `v1` envelope uses AES-256-GCM with a fresh nonce and authentication tag per secret. Legacy plaintext rows are read only for migration and are re-encrypted after successful use or by the idempotent migration command.
+- TOTP secrets are encrypted at rest with a distinct `TOTP_ENCRYPTION_KEY`. The `v1` envelope uses AES-256-GCM with a fresh nonce and authentication tag per secret. During a controlled rotation, `TOTP_PREVIOUS_ENCRYPTION_KEYS` permits reads only; successful MFA use or the transactional migration command re-wraps material with the primary key. The command reports counts only and refuses all writes if any material is undecryptable.
 - High-risk account actions are explicitly marked in the dashboard. Account deletion requires an MFA step-up code when MFA is enabled.
 - Google-only accounts should use Google Account 2-Step Verification for sign-in. App-level authenticator MFA is currently enabled only for email/password accounts.
 - Passwords are stored only as bcrypt hashes.
@@ -69,7 +69,7 @@ Out of scope:
 ### Known Gaps
 
 - There is no formal compliance certification, uptime SLA, DPA, SSO/SAML, audit-log export, or enterprise admin console.
-- The remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import, and API smoke tests have passed. The MFA pilot still needs browser validation with the first small user group, including sign-in friction and recovery handling.
+- The remote Docker health check, Cloudflare Tunnel route, backup restore test, Supabase import, and API smoke tests have passed. Key rotation operations must be piloted with a disposable account before any production MFA user is enrolled. Wider user testing should cover sign-in friction and recovery handling.
 - SMTP is required for production password reset emails. `AUTH_LOG_RESET_LINKS=true` is development-only.
 - Incident response is currently manual.
 - Task notes are free text. Users should not store passwords, API keys, customer data, private lab flags, payment data, or live incident evidence in notes.
@@ -152,7 +152,8 @@ Before shipping security-sensitive changes:
 - Run `npm run build`.
 - Run `npm audit`.
 - Run `npm run api:migrate` against the target database.
-- Dry-run `npm run migration:encrypt-totp`, then apply it with `npm run migration:encrypt-totp -- --apply` after the new API is healthy.
+- Dry-run `npm run migration:encrypt-totp`, confirm `usersBlocked` and `materials.undecryptable` are zero, then apply it with `npm run migration:encrypt-totp -- --apply` after the new API is healthy.
+- During key rotation, retain the former primary in `TOTP_PREVIOUS_ENCRYPTION_KEYS` until the apply run and a full MFA lifecycle test succeed and a final dry run reports no previous-key material.
 - Verify `/api/simulation-events`, `/api/risk-summary`, export, and account deletion after applying new migrations.
 - Verify MFA setup, MFA password login, MFA disable, and MFA-protected account deletion with an email/password account.
 - Verify `/api/health` locally and through `https://c3-api.mdpstudio.com.au`.

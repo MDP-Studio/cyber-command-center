@@ -164,13 +164,13 @@ export class PostgresDatabase {
     return rows[0] || null;
   }
 
-  async replaceMfaSecret(userId, secret) {
+  async replaceMfaSecret(userId, expectedSecret, secret) {
     const { rows } = await this.query(
       `update users
-       set mfa_totp_secret = $2, updated_at = now()
-       where id = $1 and mfa_totp_secret is not null
+       set mfa_totp_secret = $3, updated_at = now()
+       where id = $1 and mfa_totp_secret = $2
        returning id`,
-      [userId, secret],
+      [userId, expectedSecret, secret],
     );
     return rows[0] || null;
   }
